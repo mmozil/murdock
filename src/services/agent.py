@@ -229,7 +229,7 @@ async def chat(
             logger.error(f"Fallback também falhou: {e2}")
             raise
 
-    response_text = result.data
+    response_text = result.output
     latency = int((time.time() - start) * 1000)
 
     # Salvar resposta
