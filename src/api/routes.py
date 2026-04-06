@@ -144,6 +144,70 @@ async def ingest_endpoint(
     return IngestResponse(status=status, detail=result)
 
 
+@router.post("/ingest-text")
+async def ingest_text_endpoint(
+    req: dict,
+    db: AsyncSession = Depends(get_db),
+    _auth: bool = Depends(_check_api_key),
+):
+    """Ingere texto direto (para fontes que o servidor não consegue acessar)."""
+    from src.crawler.sources import get_fonte
+    from src.crawler.ingest import _clean, _detect_section
+    from src.models.tables import Document, Chunk
+    from src.rag.embeddings import generate_embedding, chunk_text as chunk_text_fn
+    from sqlalchemy import delete as sa_delete
+
+    fonte_id = req.get("fonte_id")
+    text = req.get("text", "")
+    fonte = get_fonte(fonte_id)
+    if not fonte:
+        raise HTTPException(status_code=400, detail=f"Fonte '{fonte_id}' não encontrada")
+    if len(text.strip()) < 100:
+        raise HTTPException(status_code=400, detail="Texto muito curto (min 100 chars)")
+
+    cleaned = _clean(text)
+    content_hash = __import__("hashlib").sha256(cleaned.encode()).hexdigest()[:16]
+
+    doc = (await db.execute(
+        sa_select(Document).where(Document.source_id == fonte_id)
+    )).scalar_one_or_none()
+
+    if doc:
+        await db.execute(sa_delete(Chunk).where(Chunk.document_id == doc.id))
+        doc.content_hash = content_hash
+        doc.raw_size = len(cleaned)
+    else:
+        doc = Document(
+            source_id=fonte_id, title=fonte.nome, url=fonte.url,
+            source_type=fonte.source_type, orgao=fonte.orgao,
+            fundamentacao=fonte.fundamentacao, content_hash=content_hash,
+            raw_size=len(cleaned),
+        )
+        db.add(doc)
+        await db.flush()
+
+    chunks = chunk_text_fn(cleaned)
+    count = 0
+    for i, ct in enumerate(chunks):
+        emb = generate_embedding(ct)
+        if not emb:
+            continue
+        db.add(Chunk(
+            document_id=doc.id, content=ct, embedding=emb,
+            chunk_index=i, section=_detect_section(ct),
+            metadata_={"fonte_id": fonte_id, "url": fonte.url},
+        ))
+        count += 1
+        if count % 50 == 0:
+            await db.flush()
+
+    doc.total_chunks = count
+    from src.crawler.ingest import update_search_vectors
+    await update_search_vectors(db)
+    await db.commit()
+    return {"status": "ok", "fonte_id": fonte_id, "chunks": count, "tamanho": len(cleaned)}
+
+
 @router.get("/status")
 async def status_endpoint(
     db: AsyncSession = Depends(get_db),
