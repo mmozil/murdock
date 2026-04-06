@@ -61,26 +61,26 @@ FONTES: list[FonteOficial] = [
         "Decreto 11.158/2022", "~14.000 NCMs com descrição e alíquota IPI"),
 
     # ── STF / STJ ───────────────────────────────────────────────
-    FonteOficial("stf_rg", "STF — Repercussão Geral",
-        "https://portal.stf.jus.br/jurisprudenciaRepercussao/",
+    FonteOficial("stf_sumulas", "STF — Súmulas Vinculantes",
+        "https://www.planalto.gov.br/ccivil_03/constituicao/sumulas_vinculantes.htm",
         "fiscal_stf", "html", "STF",
-        "Art. 102 §3º CF", "Temas tributários com repercussão geral"),
-    FonteOficial("stj_repetitivos", "STJ — Recursos Repetitivos",
-        "https://processo.stj.jus.br/repetitivos/temas_repetitivos/",
+        "Art. 103-A CF", "Súmulas vinculantes (tributárias e gerais)"),
+    FonteOficial("stj_sumulas", "STJ — Súmulas",
+        "https://www.stj.jus.br/sites/portalp/Paginas/Comunicacao/Noticias-antigas/2018/2018-06-28_08-30_Todas-as-sumulas-do-STJ-702-a-partir-de-2018.aspx",
         "fiscal_stj", "html", "STJ",
-        "Art. 1.036 CPC", "Temas repetitivos tributários"),
+        "Art. 479 CPC", "Súmulas STJ consolidadas"),
 
     # ── CONFAZ ──────────────────────────────────────────────────
-    FonteOficial("confaz_convenios", "CONFAZ — Convênios ICMS",
-        "https://www.confaz.fazenda.gov.br/legislacao/convenios",
+    FonteOficial("confaz_convenios", "CONFAZ — Convênios ICMS 2024-2025",
+        "https://www.confaz.fazenda.gov.br/legislacao/convenios/2025",
         "fiscal_confaz", "html", "CONFAZ",
         "LC 24/1975", "Convênios ICMS: benefícios, reduções, ST"),
 
     # ── Reforma ─────────────────────────────────────────────────
-    FonteOficial("fazenda_reforma", "Min. Fazenda — Reforma Tributária",
-        "https://www.gov.br/fazenda/pt-br/acesso-a-informacao/acoes-e-programas/reforma-tributaria",
-        "fiscal_reforma", "html", "Ministério da Fazenda",
-        "EC 132/2023 + LC 214/2025", "Materiais oficiais sobre a reforma"),
+    FonteOficial("ec_132", "EC 132/2023 — Emenda Reforma Tributária",
+        "https://www.planalto.gov.br/ccivil_03/constituicao/emendas/emc/emc132.htm",
+        "fiscal_reforma", "html", "Presidência da República",
+        "EC 132/2023", "Emenda constitucional da reforma tributária do consumo"),
 
     # ── Simples Nacional ────────────────────────────────────────
     FonteOficial("cgsn_resolucoes", "CGSN — Resoluções Simples Nacional",

@@ -190,7 +190,7 @@ async def _fetch(url: str, parser: str) -> Optional[str]:
 
 async def _fetch_html(url: str) -> Optional[str]:
     try:
-        async with httpx.AsyncClient(verify=False, timeout=60, follow_redirects=True) as client:
+        async with httpx.AsyncClient(verify=False, timeout=180, follow_redirects=True) as client:
             r = await client.get(url, headers=BROWSER_HEADERS)
             r.raise_for_status()
 
@@ -199,7 +199,14 @@ async def _fetch_html(url: str) -> Optional[str]:
             soup = BeautifulSoup(r.text, "html.parser")
             for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
                 tag.decompose()
-            main = soup.find("main") or soup.find("article") or soup.find("div", {"id": "conteudo"})
+            main = (
+                soup.find("main")
+                or soup.find("article")
+                or soup.find("div", {"id": "conteudo"})
+                or soup.find("div", {"id": "textoNorma"})
+                or soup.find("div", {"class": "textoNorma"})
+                or soup.body
+            )
             return (main or soup).get_text(separator="\n", strip=True)
         except ImportError:
             text = re.sub(r"<script[^>]*>.*?</script>", "", r.text, flags=re.DOTALL | re.I)
