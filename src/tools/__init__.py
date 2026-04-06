@@ -1,0 +1,1 @@
+"""Tools especializadas do Murdock."""

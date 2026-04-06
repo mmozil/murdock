@@ -1,0 +1,13 @@
+[project]
+name = "murdock"
+version = "1.0.0"
+description = "Murdock — Agente Tributarista AI. Especialista em legislação fiscal brasileira."
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
