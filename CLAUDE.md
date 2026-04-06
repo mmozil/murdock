@@ -36,7 +36,7 @@ src/
     embeddings.py          → Gemini embedding-001 (768d, LRU cache)
     search.py              → Hybrid search: pgvector cosine + tsvector BM25 + RRF fusion
   crawler/
-    sources.py             → 14 FonteOficial (gov.br, jus.br, leg.br)
+    sources.py             → 15 FonteOficial (gov.br, jus.br, leg.br)
     ingest.py              → Fetch → parse → chunk → embed → save (dedup por content_hash)
   tools/
     tools.py               → 7 tools Pydantic AI (search_law, calculate_tax, check_ncm, reform_2026, credit_recovery, calendar, jurisprudence)
@@ -46,7 +46,7 @@ src/
     schemas.py             → Pydantic request/response models
     routes.py              → POST /chat (SSE), POST /ingest, GET /status, GET /health, GET /sources, POST /feedback
   static/
-    index.html             → Chat UI dark theme (vanilla HTML/CSS/JS, SSE streaming)
+    index.html             → Chat UI Harvey.ai design (m.murdock, warm neutrals, Source Serif 4, SSE streaming)
 ```
 
 ## Key Patterns
@@ -68,9 +68,22 @@ ANTHROPIC_API_KEY=...      # Fallback LLM
 API_KEY=...                # Auth para endpoints admin
 ```
 
+## Design
+
+- **Estilo**: Harvey.ai editorial — warm neutrals, serif headlines, zero decoração
+- **Nome visual**: "m.murdock" (Source Serif 4) + "TAX & LEGAL AI" (subtítulo)
+- **Paleta**: warm grays (#0f0e0d ink → #fafaf9 ivory)
+- **Fontes**: Source Serif 4 (headlines, Google Fonts) + system sans (body)
+- **Radius**: 4px, sem cores de acento, espaçamento generoso
+
 ## Deploy
 
-- **Repo**: github.com/mmozil/murdock
+- **Repo**: github.com/mmozil/murdock (público)
 - **Domínio**: murdock.hovio.com.br
-- **Coolify**: Docker build, porta 8010
+- **Coolify App**: `xw0wks4oo0gcsossss4kowc4`
+- **Coolify PostgreSQL**: `sk4csooc8g8owkkk444sckos` (pgvector:pg16)
+- **Coolify Redis**: `yg800wc0kws4k8o444g44gg4`
+- **Coolify Project**: `s88c48s0kg884ck8s0gow440` (Hovio)
+- **Deploy trigger**: `curl -s "https://apps.cloudesneper.com.br/api/v1/deploy?uuid=xw0wks4oo0gcsossss4kowc4&force=false" -H "Authorization: Bearer 5|claude-deploy-token-2026"`
+- **Docker build**: Python 3.12-slim, porta 8010
 - **DB**: PostgreSQL 16 + pgvector (docker-compose inclui)
