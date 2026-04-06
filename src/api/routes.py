@@ -13,9 +13,11 @@ from src.api.schemas import (
     ChatRequest, ChatResponse, IngestRequest, IngestResponse,
     FeedbackRequest, HealthResponse,
 )
+from sqlalchemy import select as sa_select
+
 from src.services.agent import chat, chat_stream
 from src.crawler.ingest import ingest_fonte, ingest_todas, get_status, update_search_vectors
-from src.models.tables import Feedback as FeedbackModel
+from src.models.tables import Conversation, Message, Feedback as FeedbackModel
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +54,71 @@ async def chat_endpoint(
 
     result = await chat(db, req.message, req.conversation_id)
     return ChatResponse(**result)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Conversations
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/conversations")
+async def list_conversations(db: AsyncSession = Depends(get_db)):
+    """Lista conversas ordenadas por última atualização."""
+    convs = (await db.execute(
+        sa_select(Conversation)
+        .where(Conversation.total_messages > 0)
+        .order_by(Conversation.updated_at.desc())
+        .limit(50)
+    )).scalars().all()
+    return [
+        {
+            "id": str(c.id),
+            "title": c.title,
+            "total_messages": c.total_messages,
+            "model_used": c.model_used,
+            "updated_at": c.updated_at.isoformat() if c.updated_at else None,
+        }
+        for c in convs
+    ]
+
+
+@router.get("/conversations/{conversation_id}/messages")
+async def get_conversation_messages(
+    conversation_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retorna mensagens de uma conversa."""
+    msgs = (await db.execute(
+        sa_select(Message)
+        .where(Message.conversation_id == conversation_id)
+        .order_by(Message.created_at)
+    )).scalars().all()
+    return [
+        {
+            "id": str(m.id),
+            "role": m.role,
+            "content": m.content,
+            "model_used": m.model_used,
+            "latency_ms": m.latency_ms,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+        for m in msgs
+    ]
+
+
+@router.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Deleta uma conversa e suas mensagens."""
+    conv = (await db.execute(
+        sa_select(Conversation).where(Conversation.id == conversation_id)
+    )).scalar_one_or_none()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversa não encontrada")
+    await db.delete(conv)
+    await db.commit()
+    return {"status": "ok"}
 
 
 # ═══════════════════════════════════════════════════════════════════════════

@@ -106,14 +106,43 @@
       cursor: pointer;
       font-size: 13px;
       color: var(--gray-500);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.1s;
+    }
+
+    .conv-item .conv-title {
+      flex: 1;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      transition: all 0.1s;
     }
 
     .conv-item:hover { background: var(--gray-900); color: var(--gray-300); }
     .conv-item.active { background: var(--gray-900); color: var(--ivory); }
+
+    .conv-item .conv-delete {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--gray-700);
+      cursor: pointer;
+      padding: 0 2px;
+      font-size: 14px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .conv-item:hover .conv-delete { display: block; }
+    .conv-item .conv-delete:hover { color: var(--gray-400); }
+
+    .conv-date {
+      padding: 8px 12px 4px;
+      font-size: 10px;
+      color: var(--gray-700);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
 
     .sidebar-footer {
       padding: 16px 20px;
@@ -513,7 +542,7 @@
   <script>
     let conversationId = null;
     let isStreaming = false;
-    const conversations = [];
+    let conversations = [];
 
     function renderMd(text) {
       let html = text
@@ -606,6 +635,7 @@
           </div>
         </div>`;
       document.getElementById('headerTitle').textContent = 'Nova consulta';
+      updateConvList();
       document.getElementById('userInput').focus();
     }
 
@@ -616,13 +646,73 @@
 
     function updateConvList() {
       const list = document.getElementById('convList');
-      list.innerHTML = conversations.map(c =>
-        `<div class="conv-item ${c.id === conversationId ? 'active' : ''}"
-              onclick="loadConv('${c.id}')">${c.title}</div>`
-      ).join('');
+      if (!conversations.length) { list.innerHTML = ''; return; }
+
+      // Agrupar por data
+      const groups = {};
+      const today = new Date().toDateString();
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+
+      conversations.forEach(c => {
+        const d = c.updated_at ? new Date(c.updated_at) : new Date();
+        const ds = d.toDateString();
+        const label = ds === today ? 'Hoje' : ds === yesterday ? 'Ontem' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(c);
+      });
+
+      let html = '';
+      for (const [label, items] of Object.entries(groups)) {
+        html += `<div class="conv-date">${label}</div>`;
+        items.forEach(c => {
+          html += `<div class="conv-item ${c.id === conversationId ? 'active' : ''}" onclick="loadConv('${c.id}')">
+            <span class="conv-title">${c.title || 'Sem título'}</span>
+            <button class="conv-delete" onclick="event.stopPropagation();deleteConv('${c.id}')" title="Excluir">&times;</button>
+          </div>`;
+        });
+      }
+      list.innerHTML = html;
     }
 
-    function loadConv(id) { conversationId = id; updateConvList(); }
+    async function loadConversations() {
+      try {
+        const r = await fetch('/api/conversations');
+        conversations = await r.json();
+        updateConvList();
+      } catch (e) { console.error('Erro ao carregar conversas:', e); }
+    }
+
+    async function loadConv(id) {
+      if (isStreaming) return;
+      conversationId = id;
+      updateConvList();
+
+      const msgs = document.getElementById('messages');
+      const w = document.getElementById('welcome');
+      if (w) w.style.display = 'none';
+      msgs.innerHTML = '';
+
+      try {
+        const r = await fetch(`/api/conversations/${id}/messages`);
+        const messages = await r.json();
+        messages.forEach(m => {
+          const meta = m.model_used ? `${m.model_used.replace('google-gla:','')} · ${m.latency_ms || 0}ms` : '';
+          addMessage(m.role, m.content, m.role === 'assistant' ? meta : '');
+        });
+
+        const conv = conversations.find(c => c.id === id);
+        document.getElementById('headerTitle').textContent = conv?.title || 'Consulta';
+      } catch (e) { console.error('Erro ao carregar mensagens:', e); }
+    }
+
+    async function deleteConv(id) {
+      try {
+        await fetch(`/api/conversations/${id}`, { method: 'DELETE' });
+        conversations = conversations.filter(c => c.id !== id);
+        if (conversationId === id) newConversation();
+        updateConvList();
+      } catch (e) { console.error('Erro ao deletar:', e); }
+    }
 
     async function sendMessage() {
       const input = document.getElementById('userInput');
@@ -667,11 +757,8 @@
                   conversationId = info.conversation_id;
                   const meta = document.getElementById('streamMeta');
                   if (meta) meta.textContent = `${info.model.replace('google-gla:','')} \u00b7 ${info.latency_ms}ms`;
-                  if (!conversations.find(c => c.id === conversationId)) {
-                    conversations.unshift({ id: conversationId, title: msg.slice(0, 55) });
-                    updateConvList();
-                  }
                   document.getElementById('headerTitle').textContent = msg.slice(0, 55);
+                  loadConversations();
                 } catch (e) {}
               } else if (eventType === 'error') {
                 contentEl.innerHTML = `<p style="color:var(--gray-400)">Erro: ${data}</p>`;
@@ -710,6 +797,7 @@
 
     document.getElementById('userInput').focus();
     checkHealth();
+    loadConversations();
     setInterval(checkHealth, 30000);
   </script>
 </body>
