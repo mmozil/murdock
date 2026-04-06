@@ -6,23 +6,23 @@
   <title>Murdock — Especialista Tributário</title>
   <style>
     :root {
-      --bg: #0A0A0A;
-      --bg-sidebar: #0F0F0F;
-      --bg-card: #161616;
-      --bg-input: #1C1C1C;
-      --bg-hover: #241414;
-      --accent: #8B0000;
-      --accent-hover: #B22222;
-      --accent-bright: #CC1100;
-      --accent-soft: rgba(139, 0, 0, 0.18);
-      --accent-glow: rgba(176, 20, 10, 0.08);
-      --text: #E0D8D8;
-      --text-secondary: #9A8F8F;
-      --text-muted: #5C5252;
-      --border: #221A1A;
-      --border-light: #2E2222;
-      --success: #22C55E;
-      --warning: #EAB308;
+      --bg: #0C0C0C;
+      --bg-sidebar: #101010;
+      --bg-card: #171717;
+      --bg-input: #1D1D1D;
+      --bg-hover: #1E1818;
+      --accent: #5C1A1A;
+      --accent-hover: #6B2020;
+      --accent-bright: #7A2828;
+      --accent-soft: rgba(92, 26, 26, 0.16);
+      --accent-glow: rgba(92, 26, 26, 0.06);
+      --text: #D4CDCD;
+      --text-secondary: #8A8282;
+      --text-muted: #524C4C;
+      --border: #1E1919;
+      --border-light: #282222;
+      --success: #3D8B5A;
+      --warning: #B89930;
       --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
     }
@@ -46,7 +46,7 @@
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
-      background-image: linear-gradient(180deg, rgba(139,0,0,0.06) 0%, transparent 40%);
+      background-image: linear-gradient(180deg, rgba(92,26,26,0.05) 0%, transparent 40%);
     }
 
     .sidebar-header {
@@ -60,15 +60,15 @@
     .logo-icon {
       width: 38px;
       height: 38px;
-      background: linear-gradient(135deg, #8B0000, #CC1100);
+      background: linear-gradient(135deg, #4A1515, #5C1A1A);
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 20px;
       font-weight: 700;
-      color: white;
-      box-shadow: 0 2px 12px rgba(139, 0, 0, 0.35);
+      color: #C4A8A8;
+      box-shadow: 0 2px 8px rgba(60, 15, 15, 0.3);
       letter-spacing: -1px;
     }
 
@@ -87,9 +87,9 @@
     .new-chat-btn {
       margin: 12px 16px;
       padding: 10px 16px;
-      background: linear-gradient(135deg, #8B0000, #A01010);
-      color: #E0D8D8;
-      border: 1px solid rgba(176, 20, 10, 0.25);
+      background: linear-gradient(135deg, #3D1212, #4A1515);
+      color: #C4A8A8;
+      border: 1px solid rgba(92, 26, 26, 0.3);
       border-radius: 8px;
       font-size: 13px;
       font-weight: 500;
@@ -101,9 +101,9 @@
     }
 
     .new-chat-btn:hover {
-      background: linear-gradient(135deg, #A01010, #CC1100);
-      border-color: rgba(204, 17, 0, 0.4);
-      box-shadow: 0 0 16px rgba(139, 0, 0, 0.25);
+      background: linear-gradient(135deg, #4A1515, #5C1A1A);
+      border-color: rgba(92, 26, 26, 0.45);
+      box-shadow: 0 0 12px rgba(60, 15, 15, 0.2);
     }
 
     .conversations {
@@ -194,14 +194,14 @@
     .welcome-icon {
       width: 72px;
       height: 72px;
-      background: linear-gradient(135deg, rgba(139,0,0,0.25), rgba(176,20,10,0.10));
-      border: 1px solid rgba(139, 0, 0, 0.2);
+      background: linear-gradient(135deg, rgba(74,21,21,0.3), rgba(92,26,26,0.12));
+      border: 1px solid rgba(92, 26, 26, 0.2);
       border-radius: 18px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 36px;
-      box-shadow: 0 4px 24px rgba(139, 0, 0, 0.15);
+      box-shadow: 0 4px 16px rgba(40, 10, 10, 0.15);
     }
 
     .welcome h2 {
@@ -244,10 +244,10 @@
     }
 
     .example-btn:hover {
-      border-color: rgba(139, 0, 0, 0.4);
-      background: rgba(139, 0, 0, 0.10);
+      border-color: rgba(92, 26, 26, 0.35);
+      background: rgba(74, 21, 21, 0.12);
       color: var(--text);
-      box-shadow: 0 0 12px rgba(139, 0, 0, 0.08);
+      box-shadow: none;
     }
 
     .msg {
@@ -270,7 +270,7 @@
     }
 
     .msg.user .msg-avatar { background: var(--bg-input); color: var(--text-secondary); }
-    .msg.assistant .msg-avatar { background: linear-gradient(135deg, #8B0000, #CC1100); color: #E0D8D8; box-shadow: 0 2px 8px rgba(139, 0, 0, 0.3); }
+    .msg.assistant .msg-avatar { background: linear-gradient(135deg, #3D1212, #5C1A1A); color: #C4A8A8; }
 
     .msg-body {
       flex: 1;
@@ -412,8 +412,8 @@
     }
 
     .input-box:focus-within {
-      border-color: rgba(139, 0, 0, 0.5);
-      box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.08), 0 0 20px rgba(139, 0, 0, 0.06);
+      border-color: rgba(92, 26, 26, 0.4);
+      box-shadow: 0 0 0 2px rgba(74, 21, 21, 0.08);
     }
 
     .input-box textarea {
@@ -434,10 +434,10 @@
     .send-btn {
       width: 36px;
       height: 36px;
-      background: linear-gradient(135deg, #8B0000, #B22222);
+      background: linear-gradient(135deg, #3D1212, #5C1A1A);
       border: none;
       border-radius: 10px;
-      color: #E0D8D8;
+      color: #C4A8A8;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -448,8 +448,8 @@
     }
 
     .send-btn:hover {
-      background: linear-gradient(135deg, #A01010, #CC1100);
-      box-shadow: 0 0 14px rgba(139, 0, 0, 0.35);
+      background: linear-gradient(135deg, #4A1515, #6B2020);
+      box-shadow: 0 0 10px rgba(60, 15, 15, 0.2);
     }
     .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
@@ -502,9 +502,9 @@
       <div class="welcome" id="welcome">
         <div class="welcome-icon">
           <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
-            <path d="M50 10 C30 10 15 30 15 50 C15 70 30 90 50 90 C70 90 85 70 85 50 C85 30 70 10 50 10Z" fill="none" stroke="#CC1100" stroke-width="4"/>
-            <path d="M35 35 L50 55 L65 35" fill="none" stroke="#CC1100" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="50" y1="55" x2="50" y2="72" stroke="#CC1100" stroke-width="5" stroke-linecap="round"/>
+            <path d="M50 10 C30 10 15 30 15 50 C15 70 30 90 50 90 C70 90 85 70 85 50 C85 30 70 10 50 10Z" fill="none" stroke="#6B2020" stroke-width="4"/>
+            <path d="M35 35 L50 55 L65 35" fill="none" stroke="#6B2020" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="50" y1="55" x2="50" y2="72" stroke="#6B2020" stroke-width="5" stroke-linecap="round"/>
           </svg>
         </div>
         <h2>Matt <span>Murdock</span></h2>
@@ -649,9 +649,9 @@
         <div class="welcome" id="welcome">
           <div class="welcome-icon">
             <svg width="36" height="36" viewBox="0 0 100 100" fill="none">
-              <path d="M50 10 C30 10 15 30 15 50 C15 70 30 90 50 90 C70 90 85 70 85 50 C85 30 70 10 50 10Z" fill="none" stroke="#CC1100" stroke-width="4"/>
-              <path d="M35 35 L50 55 L65 35" fill="none" stroke="#CC1100" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-              <line x1="50" y1="55" x2="50" y2="72" stroke="#CC1100" stroke-width="5" stroke-linecap="round"/>
+              <path d="M50 10 C30 10 15 30 15 50 C15 70 30 90 50 90 C70 90 85 70 85 50 C85 30 70 10 50 10Z" fill="none" stroke="#6B2020" stroke-width="4"/>
+              <path d="M35 35 L50 55 L65 35" fill="none" stroke="#6B2020" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="50" y1="55" x2="50" y2="72" stroke="#6B2020" stroke-width="5" stroke-linecap="round"/>
             </svg>
           </div>
           <h2>Matt <span>Murdock</span></h2>
