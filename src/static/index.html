@@ -812,14 +812,13 @@
     marked.setOptions({
       breaks: true,
       gfm: true,
-      headerIds: false,
-      mangle: false,
     });
 
     // Custom renderer para links abrirem em nova aba
     const renderer = new marked.Renderer();
-    renderer.link = function({ href, title, text }) {
+    renderer.link = function({ href, title, tokens }) {
       const t = title ? ` title="${title}"` : '';
+      const text = this.parser.parseInline(tokens);
       return `<a href="${href}"${t} target="_blank" rel="noopener">${text}</a>`;
     };
     marked.use({ renderer });
@@ -828,9 +827,35 @@
       try {
         return marked.parse(text);
       } catch (e) {
-        // Fallback: texto puro com quebras de linha
         return '<p>' + text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
       }
+    }
+
+    // Debounced render para streaming — evita re-render em cada token
+    let _renderTimer = null;
+    let _renderTarget = null;
+    let _renderText = '';
+
+    function renderMdDebounced(el, text) {
+      _renderTarget = el;
+      _renderText = text;
+      // Renderiza imediatamente texto simples (cursor visual)
+      // Mas debounce o parse completo com marked.js
+      if (_renderTimer) clearTimeout(_renderTimer);
+      _renderTimer = setTimeout(() => {
+        if (_renderTarget) {
+          _renderTarget.innerHTML = renderMd(_renderText);
+          scrollToBottom();
+        }
+        _renderTimer = null;
+      }, 80); // 80ms debounce — fluido mas não quebra tabelas parciais
+    }
+
+    function renderMdFinal(el, text) {
+      // Render final sem debounce — garante formatação completa
+      if (_renderTimer) { clearTimeout(_renderTimer); _renderTimer = null; }
+      el.innerHTML = renderMd(text);
+      scrollToBottom();
     }
 
     // ── UI Helpers ─────────────────────────────────────────
@@ -1056,9 +1081,10 @@
               const data = line.slice(6);
               if (eventType === 'token') {
                 fullText += data;
-                contentEl.innerHTML = renderMd(fullText);
-                scrollToBottom();
+                renderMdDebounced(contentEl, fullText);
               } else if (eventType === 'done') {
+                // Render final completo — garante tabelas e blocos corretos
+                renderMdFinal(contentEl, fullText);
                 try {
                   const info = JSON.parse(data);
                   conversationId = info.conversation_id;
@@ -1066,7 +1092,6 @@
                   if (meta) meta.textContent = `${info.model.replace('google-gla:','').replace('anthropic:','').replace('openai:','')} · ${info.latency_ms}ms`;
                   document.getElementById('headerTitle').textContent = msg.slice(0, 60);
                   loadConversations();
-                  // Atualizar perfil após cada mensagem
                   loadProfile();
                 } catch (e) {}
               } else if (eventType === 'error') {
