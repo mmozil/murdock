@@ -5,6 +5,7 @@ import uuid
 from typing import Optional
 
 from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.messages import ModelRequest, ModelResponse, UserPromptPart, TextPart
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -102,8 +103,15 @@ Direto. Preciso. Confiante. Como um advogado tributarista sênior que cobra R$2.
 # Agente Pydantic AI
 # ═══════════════════════════════════════════════════════════════════════════
 
+# MiniMax M2.5 via OpenAI-compatible API
+primary_model = OpenAIModel(
+    settings.PRIMARY_MODEL,
+    base_url=settings.PRIMARY_BASE_URL,
+    api_key=settings.MINIMAX_API_KEY or "no-key",
+)
+
 murdock_agent = Agent(
-    f"google-gla:{settings.PRIMARY_MODEL}",
+    primary_model,
     deps_type=MurdockDeps,
     system_prompt=SYSTEM_PROMPT,
     tools=[
@@ -233,16 +241,16 @@ async def chat(
 
     # Rodar agente
     deps = MurdockDeps(db=db)
-    model = f"google-gla:{settings.PRIMARY_MODEL}"
+    model_name = settings.PRIMARY_MODEL
     fallback_model = f"anthropic:{settings.FALLBACK_MODEL}"
 
     try:
         result = await murdock_agent.run(
             full_prompt, deps=deps, message_history=message_history
         )
-        model_used = model
+        model_used = model_name
     except Exception as e:
-        logger.warning(f"Gemini falhou ({e}), tentando fallback Claude...")
+        logger.warning(f"MiniMax falhou ({e}), tentando fallback Claude...")
         try:
             result = await murdock_agent.run(
                 full_prompt, deps=deps, model=fallback_model,
@@ -314,11 +322,11 @@ async def chat_stream(
     full_prompt = user_message + dynamic_ctx if dynamic_ctx else user_message
 
     deps = MurdockDeps(db=db)
-    model = f"google-gla:{settings.PRIMARY_MODEL}"
+    model_name = settings.PRIMARY_MODEL
     fallback_model = f"anthropic:{settings.FALLBACK_MODEL}"
 
     full_response = []
-    model_used = model
+    model_used = model_name
 
     try:
         async with murdock_agent.run_stream(
@@ -328,7 +336,7 @@ async def chat_stream(
                 full_response.append(chunk)
                 yield {"event": "token", "data": chunk}
     except Exception as e:
-        logger.warning(f"Gemini stream falhou ({e}), tentando fallback...")
+        logger.warning(f"MiniMax stream falhou ({e}), tentando fallback...")
         model_used = fallback_model
         full_response = []
         try:

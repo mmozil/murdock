@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Summary
 
-Murdock é um agente IA especializado em direito tributário, contábil e fiscal brasileiro. Deploy em `murdock.hovio.com.br`. Usa Pydantic AI como framework de agente, Gemini 2.5 Flash como LLM primário, PostgreSQL+pgvector para RAG, e knowledge base alimentada exclusivamente por fontes oficiais gov.br.
+Murdock é um agente IA especializado em direito tributário, contábil e fiscal brasileiro. Deploy em `murdock.hovio.com.br`. Usa Pydantic AI como framework de agente, MiniMax M2.5 como LLM primário (OpenAI-compatible API), Claude Sonnet como fallback, PostgreSQL+pgvector para RAG, e knowledge base alimentada por fontes oficiais gov.br + Q&A aprendidos via learning loop.
 
 ## Commands
 
@@ -54,7 +54,7 @@ src/
 ## Key Patterns
 
 - **Hybrid Search (RRF)**: Dense (pgvector cosine) + Sparse (tsvector ts_rank_cd) + RRF fusion. Score = sum(1/(k + rank_i)), k=60.
-- **Agent Framework**: Pydantic AI v0.2+. Tools recebem `RunContext[MurdockDeps]` com sessão DB. Model fallback: Gemini Flash → Claude Sonnet. Histórico de conversa (últimas 20 msgs) enviado via `message_history` param.
+- **Agent Framework**: Pydantic AI v0.2+. Tools recebem `RunContext[MurdockDeps]` com sessão DB. Model: MiniMax M2.5 (OpenAI-compatible) → fallback Claude Sonnet. Histórico de conversa (últimas 20 msgs) enviado via `message_history` param.
 - **SSE Streaming**: `sse-starlette` no backend, `EventSource` no frontend. Events: `token`, `done`, `error`.
 - **Embeddings**: Gemini embedding-001, 768 dimensões, LRU cache 1000 entries. Task types: RETRIEVAL_DOCUMENT (ingest), RETRIEVAL_QUERY (search).
 - **Crawler**: Domain validation (.gov.br, .jus.br, .leg.br, .ibpt.org.br). Browser-like headers. Parsers: HTML (BeautifulSoup), JSON API. Dedup via SHA-256 content hash.
@@ -70,8 +70,9 @@ src/
 ```bash
 DATABASE_URL=postgresql+asyncpg://murdock:murdock@localhost:5432/murdock
 REDIS_URL=redis://localhost:6379/5
-GEMINI_API_KEY=...         # Google AI (embeddings + LLM)
-ANTHROPIC_API_KEY=...      # Fallback LLM
+MINIMAX_API_KEY=...        # MiniMax M2.5 (LLM primário)
+GEMINI_API_KEY=...         # Google AI (embeddings only)
+ANTHROPIC_API_KEY=...      # Claude Sonnet (fallback LLM)
 API_KEY=...                # Auth para endpoints admin
 ```
 
