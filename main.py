@@ -61,10 +61,17 @@ app.include_router(router, prefix="/api")
 app.mount("/static", StaticFiles(directory="src/static"), name="static")
 
 
-@app.get("/", response_class=FileResponse)
+@app.get("/")
 async def root():
-    """Serve a UI do chat."""
-    return FileResponse("src/static/index.html")
+    """Serve a UI do chat (sem cache para sempre pegar a versão mais recente)."""
+    return FileResponse(
+        "src/static/index.html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 
 if __name__ == "__main__":
