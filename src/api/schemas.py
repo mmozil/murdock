@@ -8,6 +8,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=5000, description="Mensagem do usuário")
     conversation_id: Optional[str] = Field(None, description="ID da conversa (para continuar)")
     stream: bool = Field(True, description="Se True, resposta via SSE streaming")
+    client_id: Optional[str] = Field(None, description="ID persistente do cliente (para memória)")
 
 
 class ChatResponse(BaseModel):

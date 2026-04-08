@@ -127,4 +127,39 @@ class Feedback(Base):
     message_id = Column(UUID(as_uuid=True), ForeignKey("messages.id", ondelete="CASCADE"), nullable=False)
     rating = Column(Integer)  # 1-5 ou thumbs up/down (1/0)
     comment = Column(Text)
+    learned = Column(Boolean, default=False)  # se já foi processado pelo learning loop
     created_at = Column(DateTime(timezone=True), default=utcnow)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Client Memory — perfil persistente do cliente
+# ═══════════════════════════════════════════════════════════════════════════
+
+class ClientProfile(Base):
+    """Perfil persistente do cliente — o agente nunca mais pede info que já tem."""
+    __tablename__ = "client_profiles"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    client_id = Column(String(100), unique=True, nullable=False, index=True)
+
+    # Dados fiscais extraídos das conversas
+    nome = Column(String(300))
+    regime_tributario = Column(String(50))       # simples, lucro_presumido, lucro_real, mei
+    cnae_principal = Column(String(20))
+    cnaes_secundarios = Column(JSONB)            # ["6201-5/01", ...]
+    uf = Column(String(2))
+    municipio = Column(String(200))
+    faturamento_12m = Column(Float)              # faturamento últimos 12 meses
+    tipo_atividade = Column(String(100))         # software, comercio, servicos, industria
+    cnpj = Column(String(20))
+    porte = Column(String(20))                   # mei, me, epp, medio, grande
+    funcionarios = Column(Integer)
+    folha_pagamento = Column(Float)
+
+    # Contexto adicional (livre)
+    notas = Column(JSONB, default=list)          # notas livres extraídas das conversas
+
+    # Metadata
+    total_conversas = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

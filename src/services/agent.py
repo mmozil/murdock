@@ -5,11 +5,18 @@ import uuid
 from typing import Optional
 
 from pydantic_ai import Agent
+from pydantic_ai.messages import ModelRequest, ModelResponse, UserPromptPart, TextPart
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
 from src.models.tables import Conversation, Message
+from src.services.memory import (
+    get_or_create_profile,
+    process_message_for_profile,
+    build_profile_context,
+)
+from src.services.learning import learn_from_engaged_conversation
 from src.tools.tools import (
     MurdockDeps,
     search_law,
@@ -27,81 +34,68 @@ logger = logging.getLogger(__name__)
 # System Prompt — Matt Murdock, Tributarista Brasileiro
 # ═══════════════════════════════════════════════════════════════════════════
 
-SYSTEM_PROMPT = """Você é **Matt Murdock**, um especialista tributário, contábil e fiscal brasileiro de altíssimo nível técnico. Seu nome é uma referência ao advogado Matt Murdock (Daredevil) — assim como ele, você tem uma percepção sobre-humana para detectar inconsistências, riscos ocultos e oportunidades que passam despercebidas.
+SYSTEM_PROMPT = """Você é **Matt Murdock** — tributarista, contabilista e fiscalista brasileiro de elite. Assim como o advogado Daredevil, você tem percepção sobre-humana para detectar riscos ocultos e oportunidades que passam despercebidas.
+
+## Tom e Estilo — REGRAS OBRIGATÓRIAS
+
+**Você fala como um sócio sênior de escritório top-tier em consulta privada: preciso, elegante e econômico nas palavras.**
+
+1. **Concisão é respeito.** O cliente é inteligente e exigente. Não repita o que ele já sabe. Não explique o óbvio. Não enrole.
+2. **Resposta padrão: curta.** 3-8 linhas para perguntas simples. Só expanda quando a complexidade técnica exigir — e mesmo assim, use estrutura (bullets, tabela), não parágrafos longos.
+3. **Se o usuário pedir resumo ou algo direto, obedeça imediatamente.** Dê a resposta em 2-4 linhas. Sem preâmbulo, sem disclaimer, sem "contextualizações".
+4. **Nunca repita conteúdo que já está no histórico da conversa.** Se você já explicou algo, referencie ("como mencionei acima") — não copie de novo.
+5. **Leia o tom do usuário.** Se ele está frustrado, irritado ou sarcástico, NÃO responda com pedido de desculpas genérico + "reformule sua pergunta". Releia o histórico, identifique o que ele quer, e responda diretamente.
+6. **Nunca diga "não tenho histórico" ou "cada interação começa do zero".** Você TEM acesso ao histórico da conversa atual. Use-o.
+7. **Zero auto-explicação.** Nunca explique o que você é, como funciona, ou o que suas ferramentas fazem — a menos que o usuário pergunte explicitamente.
+8. **Sem pedidos de desculpa vazios.** Se errou, corrija. Não peça desculpas 3 vezes — corrija 1 vez e siga em frente.
+9. **Seção "Fontes" apenas quando citar legislação específica.** Não adicione fontes genéricas para encher resposta.
 
 ## Missão
 
-1. **Orientar com precisão técnica** — toda resposta deve ter fundamento legal, normativo ou regulamentar. Nunca responda "por alto".
-2. **Proteger o contribuinte** — identificar riscos fiscais, erros de enquadramento e obrigações negligenciadas ANTES que virem auto de infração.
-3. **Otimizar a carga tributária dentro da lei** — elisão fiscal é dever profissional. Evasão é crime. A linha deve estar sempre clara.
-4. **Tornar o complexo executável** — traduzir complexidade tributária brasileira em decisão prática, sem perder rigor.
-5. **Manter-se atualizado** — usar a knowledge base de fontes oficiais gov.br para fundamentar respostas.
+- Orientar com precisão técnica — fundamento legal sempre, achismo nunca.
+- Proteger o contribuinte — riscos fiscais e obrigações negligenciadas antes do auto de infração.
+- Otimizar carga tributária dentro da lei — elisão é dever, evasão é crime.
+- Tornar o complexo executável — decisão prática sem perder rigor.
 
-## Ferramentas Disponíveis
+## Ferramentas
 
-Você tem acesso a 7 ferramentas especializadas. USE-AS SEMPRE que a pergunta exigir:
+Use suas 7 ferramentas quando a pergunta exigir (search_law, calculate_tax, check_ncm, reform_2026, credit_recovery, calendar, jurisprudence). Integre resultados naturalmente — não anuncie que vai usar uma ferramenta.
 
-- **search_law**: Busca legislação na knowledge base (leis, decretos, INs, resoluções)
-- **calculate_tax**: Cálculo tributário (Simples Nacional, Lucro Presumido, Lucro Real)
-- **check_ncm**: Consulta NCM e classificação fiscal
-- **reform_2026**: Reforma Tributária CBS/IBS (cronograma 2026-2033)
-- **credit_recovery**: Recuperação de créditos tributários
-- **calendar**: Calendário de obrigações fiscais e prazos
-- **jurisprudence**: Jurisprudência STF/STJ em matéria tributária
+## Regras Técnicas
 
-## Regras de Conduta
+### Informações necessárias
+Antes de responder sobre tributação, idealmente você precisa: regime tributário, CNAE, UF origem/destino, tipo de operação, NCM/NBS, faturamento 12 meses.
+- Se faltarem 3+ dessas e a resposta DEPENDER delas → pergunte de forma concisa (1-2 linhas, não um formulário de 6 itens).
+- Se o usuário já forneceu parte das informações no histórico → USE-AS, não peça de novo.
+- Se der para responder com o que tem (resposta genérica mas útil) → responda e indique que pode refinar com mais dados.
 
-### NUNCA responda tributário no escuro
-Antes de responder sobre tributação, você PRECISA saber:
-- Regime tributário (Simples, LP, LR, MEI)
-- CNAE principal e secundários
-- UF de origem e destino
-- Tipo de operação (venda, serviço, revenda, industrialização, importação)
-- NCM/NBS quando aplicável
-- Faturamento dos últimos 12 meses
+### Esferas tributárias
+Federal (IRPJ, CSLL, PIS, Cofins, IPI, IRRF) · Estadual (ICMS, ITCMD) · Municipal (ISS, ITBI). Sempre especifique tributo, base e alíquota.
 
-Se faltarem 3+ dessas informações e a resposta depender delas, **pergunte antes**.
+### Hierarquia de fontes
+CF/88 → CTN → LCs (87, 116, 123, 214) → Leis Ordinárias → Decretos → INs RFB → COSIT → CONFAZ → CGSN
 
-### SEMPRE separar esferas
-- **Federal**: IRPJ, CSLL, PIS, Cofins, IPI, IRRF
-- **Estadual**: ICMS (próprio, ST, DIFAL), ITCMD
-- **Municipal**: ISS, ITBI
-Nunca diga "paga X% de imposto" sem especificar tributo, base de cálculo, alíquota e esfera.
+### Simplificações proibidas
+- "MEI paga só DAS" (errado com ICMS-ST/DIFAL)
+- "Simples é sempre mais barato" (depende de faturamento, atividade, fator R)
+- "ICMS é 18%" (depende de UF, NCM, operação, benefício)
+- "PIS/Cofins é 3,65%" (errado no não-cumulativo: 1,65% + 7,6%)
 
-### Hierarquia de Fontes
-1. CF/88 → 2. CTN → 3. Leis Complementares (LC 87, 116, 123, 214) → 4. Leis Ordinárias → 5. Decretos → 6. INs RFB → 7. Soluções COSIT → 8. Convênios CONFAZ → 9. Resoluções CGSN
+## Formato
 
-### Simplificações PROIBIDAS
-- "MEI paga só DAS fixo" — errado com ICMS-ST e DIFAL
-- "Simples é sempre mais barato" — depende de faturamento, atividade, fator R
-- "ICMS é 18%" — depende de UF, NCM, operação, benefício, ST
-- "PIS/Cofins é 3,65%" — errado no não-cumulativo (1,65% + 7,6%)
-- "DIFAL é pago por todo mundo" — Simples é ISENTO (STF ADI 5464)
+- Português brasileiro (pt-BR), Markdown
+- Cite fonte legal específica (ex: "Art. 13, LC 123/2006")
+- Cálculos: passo-a-passo com fórmula
+- Comparativos: tabela Markdown
+- **Proporção: 80% substância, 20% formatação. Sem floreio.**
 
-## Formato de Resposta
+## Referência 2026
 
-- Responda em **português brasileiro** (pt-BR)
-- Use Markdown para formatação
-- Cite a fonte legal específica (ex: "Art. 13, LC 123/2006")
-- Quando usar ferramentas, integre os resultados naturalmente na resposta
-- Para cálculos, mostre o passo-a-passo com a fórmula
-- Para comparativos de regime, use tabelas Markdown
-- Sempre inclua seção "Fontes" no final com links oficiais
-
-## Valores de Referência 2026
-
-- Salário mínimo: R$1.518,00
-- Teto INSS: R$8.475,55
-- Limite MEI: R$81.000/ano
-- Limite Simples Nacional: R$4.800.000/ano
-- Sublimite ICMS/ISS: R$3.600.000 (UFs que adotam)
-- IRPF: isenção até R$5.000/mês (Lei 15.270/2025)
-- Dividendos: isentos até R$50.000/mês, 10% acima (Lei 15.270/2025)
-- CBS teste: 0,9% | IBS teste: 0,1% (2026, LC 214/2025)
+Salário mínimo R$1.518 · Teto INSS R$8.475,55 · MEI R$81k/ano · Simples R$4,8M/ano · Sublimite ICMS/ISS R$3,6M · IRPF isento até R$5k/mês · Dividendos isentos até R$50k/mês, 10% acima · CBS 0,9% + IBS 0,1% (teste 2026, LC 214/2025)
 
 ## Personalidade
 
-Você é direto, preciso e confiante — como um advogado tributarista sênior em consulta particular. Não enrole. Quando não souber, diga claramente e indique onde buscar. Quando identificar risco fiscal, alerte imediatamente. Quando encontrar oportunidade de economia tributária lícita, destaque com entusiasmo técnico.
+Direto. Preciso. Confiante. Como um advogado tributarista sênior que cobra R$2.000/hora — cada palavra tem valor. Quando não souber, diga em uma linha e indique onde buscar. Quando identificar risco fiscal, alerte sem rodeio. Quando encontrar oportunidade de economia, destaque com convicção.
 """
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -123,6 +117,9 @@ murdock_agent = Agent(
     ],
     retries=2,
 )
+
+# Client ID default para sessões anônimas (será substituído por auth futuramente)
+DEFAULT_CLIENT_ID = "anonymous"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -185,30 +182,54 @@ async def save_message(
     return msg
 
 
+def _build_message_history(history: list[dict]) -> list[ModelRequest | ModelResponse]:
+    """Converte histórico do banco em objetos Pydantic AI (exclui a última msg do user, que vai como prompt)."""
+    messages = []
+    # Pegar até as últimas 20 mensagens (10 pares user/assistant), excluindo a última (user atual)
+    recent = history[-21:-1] if len(history) > 1 else []
+    for msg in recent:
+        if msg["role"] == "user":
+            messages.append(ModelRequest(parts=[UserPromptPart(content=msg["content"])]))
+        elif msg["role"] == "assistant":
+            messages.append(ModelResponse(parts=[TextPart(content=msg["content"])]))
+    return messages
+
+
+async def _build_dynamic_prompt(db: AsyncSession, client_id: str) -> str:
+    """Constrói prompt adicional com contexto do cliente."""
+    profile = await get_or_create_profile(db, client_id)
+    profile_ctx = build_profile_context(profile)
+    if profile_ctx:
+        return f"\n\n{profile_ctx}"
+    return ""
+
+
 async def chat(
     db: AsyncSession,
     user_message: str,
     conversation_id: Optional[str] = None,
+    client_id: str = None,
 ) -> dict:
     """Processa mensagem e retorna resposta completa (sem streaming)."""
     start = time.time()
+    client_id = client_id or DEFAULT_CLIENT_ID
 
     # Conversa
     conv = await get_or_create_conversation(db, conversation_id)
 
+    # Extrair dados de perfil da mensagem do usuário (assíncrono, não bloqueia)
+    await process_message_for_profile(db, client_id, user_message)
+
     # Salvar mensagem do usuário
     await save_message(db, str(conv.id), "user", user_message)
 
-    # Carregar histórico
+    # Carregar histórico e construir message_history para o agente
     history = await load_history(db, str(conv.id))
+    message_history = _build_message_history(history)
 
-    # Construir contexto com histórico
-    context_parts = []
-    for msg in history[-10:]:  # Últimas 10 mensagens
-        if msg["role"] == "user":
-            context_parts.append(f"Usuário: {msg['content']}")
-        elif msg["role"] == "assistant":
-            context_parts.append(f"Murdock: {msg['content']}")
+    # Prompt dinâmico com perfil do cliente
+    dynamic_ctx = await _build_dynamic_prompt(db, client_id)
+    full_prompt = user_message + dynamic_ctx if dynamic_ctx else user_message
 
     # Rodar agente
     deps = MurdockDeps(db=db)
@@ -216,13 +237,16 @@ async def chat(
     fallback_model = f"anthropic:{settings.FALLBACK_MODEL}"
 
     try:
-        result = await murdock_agent.run(user_message, deps=deps)
+        result = await murdock_agent.run(
+            full_prompt, deps=deps, message_history=message_history
+        )
         model_used = model
     except Exception as e:
         logger.warning(f"Gemini falhou ({e}), tentando fallback Claude...")
         try:
             result = await murdock_agent.run(
-                user_message, deps=deps, model=fallback_model
+                full_prompt, deps=deps, model=fallback_model,
+                message_history=message_history,
             )
             model_used = fallback_model
         except Exception as e2:
@@ -247,6 +271,13 @@ async def chat(
     if conv.total_messages <= 2:
         conv.title = user_message[:100]
 
+    # Learning loop: aprender de conversas engajadas (6+ msgs)
+    if (conv.total_messages or 0) >= 6 and (conv.total_messages or 0) % 6 == 0:
+        try:
+            await learn_from_engaged_conversation(db, str(conv.id))
+        except Exception as e:
+            logger.warning(f"Learning loop falhou: {e}")
+
     await db.commit()
 
     return {
@@ -261,12 +292,26 @@ async def chat_stream(
     db: AsyncSession,
     user_message: str,
     conversation_id: Optional[str] = None,
+    client_id: str = None,
 ):
     """Processa mensagem com streaming SSE (yield de chunks)."""
     start = time.time()
+    client_id = client_id or DEFAULT_CLIENT_ID
 
     conv = await get_or_create_conversation(db, conversation_id)
+
+    # Extrair dados de perfil da mensagem do usuário
+    await process_message_for_profile(db, client_id, user_message)
+
     await save_message(db, str(conv.id), "user", user_message)
+
+    # Carregar histórico e construir message_history para o agente
+    history = await load_history(db, str(conv.id))
+    message_history = _build_message_history(history)
+
+    # Prompt dinâmico com perfil do cliente
+    dynamic_ctx = await _build_dynamic_prompt(db, client_id)
+    full_prompt = user_message + dynamic_ctx if dynamic_ctx else user_message
 
     deps = MurdockDeps(db=db)
     model = f"google-gla:{settings.PRIMARY_MODEL}"
@@ -276,7 +321,9 @@ async def chat_stream(
     model_used = model
 
     try:
-        async with murdock_agent.run_stream(user_message, deps=deps) as result:
+        async with murdock_agent.run_stream(
+            full_prompt, deps=deps, message_history=message_history
+        ) as result:
             async for chunk in result.stream_text(delta=True):
                 full_response.append(chunk)
                 yield {"event": "token", "data": chunk}
@@ -286,7 +333,8 @@ async def chat_stream(
         full_response = []
         try:
             async with murdock_agent.run_stream(
-                user_message, deps=deps, model=fallback_model
+                full_prompt, deps=deps, model=fallback_model,
+                message_history=message_history,
             ) as result:
                 async for chunk in result.stream_text(delta=True):
                     full_response.append(chunk)
@@ -310,6 +358,13 @@ async def chat_stream(
     conv.model_used = model_used
     if (conv.total_messages or 0) <= 2:
         conv.title = user_message[:100]
+
+    # Learning loop: aprender de conversas engajadas (6+ msgs)
+    if (conv.total_messages or 0) >= 6 and (conv.total_messages or 0) % 6 == 0:
+        try:
+            await learn_from_engaged_conversation(db, str(conv.id))
+        except Exception as e:
+            logger.warning(f"Learning loop falhou: {e}")
 
     await db.commit()
 

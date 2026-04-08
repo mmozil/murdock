@@ -3,26 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>m.murdock</title>
+  <title>m.murdock — Tax & Legal AI</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
 
     :root {
       --ink: #0f0e0d;
-      --gray-900: #1f1d1a;
-      --gray-800: #33312c;
-      --gray-700: #524f49;
-      --gray-600: #706d66;
+      --gray-900: #1a1918;
+      --gray-850: #222120;
+      --gray-800: #2e2d2b;
+      --gray-700: #484643;
+      --gray-600: #6b6862;
       --gray-500: #8f8b85;
       --gray-400: #adaba5;
       --gray-300: #cccac6;
       --gray-200: #e5e5e3;
       --gray-100: #f2f1f0;
       --ivory: #fafaf9;
+      --accent: #c9a96e;
+      --accent-dim: rgba(201,169,110,0.12);
+      --green: #5a9a6e;
+      --red: #9a5a5a;
       --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
       --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
       --radius: 4px;
+      --radius-lg: 8px;
+      --transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,11 +43,12 @@
       overflow: hidden;
       display: flex;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* ── Sidebar ──────────────────────────────────────────── */
+    /* ── Sidebar ────────────────────────────────────────────── */
     .sidebar {
-      width: 260px;
+      width: 272px;
       background: var(--ink);
       border-right: 1px solid var(--gray-800);
       display: flex;
@@ -48,29 +57,29 @@
     }
 
     .sidebar-header {
-      padding: 24px 20px;
+      padding: 28px 24px 24px;
       border-bottom: 1px solid var(--gray-800);
     }
 
     .logo {
       font-family: var(--font-serif);
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 400;
       color: var(--ivory);
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
     }
 
     .logo-sub {
       font-family: var(--font-sans);
-      font-size: 11px;
+      font-size: 10px;
       color: var(--gray-600);
-      margin-top: 2px;
-      letter-spacing: 0.05em;
+      margin-top: 3px;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
     }
 
     .new-chat-btn {
-      margin: 16px 20px 8px;
+      margin: 16px 16px 8px;
       padding: 0 16px;
       height: 40px;
       background: var(--ivory);
@@ -81,27 +90,36 @@
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: all var(--transition);
       display: flex;
       align-items: center;
       gap: 8px;
       white-space: nowrap;
     }
 
-    .new-chat-btn:hover { background: var(--gray-300); }
+    .new-chat-btn:hover { background: var(--gray-200); }
 
     .conversations {
       flex: 1;
       overflow-y: auto;
-      padding: 8px 12px;
+      padding: 8px 10px;
     }
 
-    .conversations::-webkit-scrollbar { width: 4px; }
+    .conversations::-webkit-scrollbar { width: 3px; }
     .conversations::-webkit-scrollbar-track { background: transparent; }
     .conversations::-webkit-scrollbar-thumb { background: var(--gray-800); border-radius: 2px; }
 
+    .conv-date {
+      padding: 12px 12px 4px;
+      font-size: 10px;
+      color: var(--gray-700);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 500;
+    }
+
     .conv-item {
-      padding: 8px 12px;
+      padding: 9px 12px;
       border-radius: var(--radius);
       cursor: pointer;
       font-size: 13px;
@@ -109,7 +127,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.1s;
+      transition: all 0.12s;
     }
 
     .conv-item .conv-title {
@@ -119,8 +137,8 @@
       text-overflow: ellipsis;
     }
 
-    .conv-item:hover { background: var(--gray-900); color: var(--gray-300); }
-    .conv-item.active { background: var(--gray-900); color: var(--ivory); }
+    .conv-item:hover { background: var(--gray-850); color: var(--gray-300); }
+    .conv-item.active { background: var(--gray-850); color: var(--ivory); }
 
     .conv-item .conv-delete {
       display: none;
@@ -136,16 +154,43 @@
     .conv-item:hover .conv-delete { display: block; }
     .conv-item .conv-delete:hover { color: var(--gray-400); }
 
-    .conv-date {
-      padding: 8px 12px 4px;
-      font-size: 10px;
-      color: var(--gray-700);
+    /* ── Profile Card (sidebar) ───────────────────────────── */
+    .profile-card {
+      margin: 8px 16px;
+      padding: 12px 14px;
+      background: var(--gray-850);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--gray-800);
+      font-size: 11px;
+      color: var(--gray-500);
+      line-height: 1.6;
+      display: none;
+    }
+
+    .profile-card.visible { display: block; }
+
+    .profile-card .profile-label {
+      font-size: 9px;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.1em;
+      color: var(--gray-700);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .profile-card .profile-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+    }
+
+    .profile-card .profile-item span:last-child {
+      color: var(--gray-300);
+      font-weight: 500;
     }
 
     .sidebar-footer {
-      padding: 16px 20px;
+      padding: 16px 24px;
       border-top: 1px solid var(--gray-800);
       font-size: 11px;
       color: var(--gray-700);
@@ -155,11 +200,11 @@
     .sidebar-footer a {
       color: var(--gray-500);
       text-decoration: none;
-      transition: color 0.15s;
+      transition: color var(--transition);
     }
     .sidebar-footer a:hover { color: var(--ivory); }
 
-    /* ── Main ─────────────────────────────────────────────── */
+    /* ── Main ────────────────────────────────────────────── */
     .main {
       flex: 1;
       display: flex;
@@ -169,7 +214,7 @@
     }
 
     .main-header {
-      padding: 16px 32px;
+      padding: 14px 32px;
       border-bottom: 1px solid var(--gray-800);
       display: flex;
       align-items: center;
@@ -183,37 +228,40 @@
       font-size: 13px;
       font-weight: 400;
       color: var(--gray-500);
-      letter-spacing: 0.01em;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      color: var(--gray-600);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--gray-850);
+      border: 1px solid var(--gray-800);
     }
 
     .status-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #4a9;
-      display: inline-block;
+      background: var(--green);
     }
 
-    .status-text {
-      font-size: 11px;
-      color: var(--gray-600);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* ── Messages ─────────────────────────────────────────── */
+    /* ── Messages ────────────────────────────────────────── */
     .messages {
       flex: 1;
       overflow-y: auto;
-      padding: 32px;
+      padding: 40px 32px;
       scroll-behavior: smooth;
     }
 
-    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar { width: 3px; }
     .messages::-webkit-scrollbar-track { background: transparent; }
     .messages::-webkit-scrollbar-thumb { background: var(--gray-800); border-radius: 2px; }
 
+    /* ── Welcome Screen ──────────────────────────────────── */
     .welcome {
       display: flex;
       flex-direction: column;
@@ -221,59 +269,81 @@
       justify-content: center;
       height: 100%;
       text-align: center;
-      gap: 20px;
+      gap: 24px;
+      animation: fadeIn 0.6s ease;
     }
 
-    .welcome h1 {
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+    .welcome-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .welcome-brand h1 {
       font-family: var(--font-serif);
-      font-size: 48px;
+      font-size: 56px;
       font-weight: 400;
       color: var(--ivory);
-      letter-spacing: -0.025em;
-      line-height: 1.1;
+      letter-spacing: -0.035em;
+      line-height: 1;
+    }
+
+    .welcome-brand .tagline {
+      font-size: 12px;
+      color: var(--gray-600);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
     }
 
     .welcome p {
       font-size: 15px;
       color: var(--gray-500);
-      max-width: 440px;
-      line-height: 1.6;
+      max-width: 480px;
+      line-height: 1.7;
     }
 
     .welcome-examples {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      max-width: 560px;
-      margin-top: 12px;
+      gap: 10px;
+      max-width: 600px;
+      margin-top: 8px;
     }
 
     .example-btn {
-      padding: 14px 16px;
+      padding: 16px 18px;
       background: transparent;
       border: 1px solid var(--gray-800);
-      border-radius: var(--radius);
+      border-radius: var(--radius-lg);
       color: var(--gray-400);
       font-family: var(--font-sans);
       font-size: 12.5px;
       cursor: pointer;
       text-align: left;
-      transition: all 0.15s;
-      line-height: 1.45;
+      transition: all var(--transition);
+      line-height: 1.5;
     }
 
     .example-btn:hover {
       border-color: var(--gray-700);
       color: var(--ivory);
-      background: var(--ink);
+      background: var(--gray-850);
+      transform: translateY(-1px);
     }
 
+    /* ── Message Bubbles ─────────────────────────────────── */
     .msg {
-      max-width: 760px;
-      margin: 0 auto 28px;
+      max-width: 780px;
+      margin: 0 auto 32px;
       display: flex;
       gap: 16px;
+      animation: msgIn 0.3s ease;
     }
+
+    @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
     .msg-avatar {
       width: 28px;
@@ -283,9 +353,9 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 600;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.03em;
     }
 
     .msg.user .msg-avatar { background: var(--gray-800); color: var(--gray-400); }
@@ -294,96 +364,207 @@
     .msg-body { flex: 1; min-width: 0; }
 
     .msg-name {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       margin-bottom: 6px;
-      color: var(--gray-400);
-      letter-spacing: 0.02em;
+      color: var(--gray-500);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
     }
 
     .msg-content {
-      font-size: 14px;
-      line-height: 1.7;
+      font-size: 14.5px;
+      line-height: 1.8;
       color: var(--gray-200);
       word-break: break-word;
     }
 
-    .msg-content p { margin-bottom: 12px; }
+    /* ── Markdown Typography ─────────────────────────────── */
+    .msg-content p { margin: 0 0 14px; }
     .msg-content p:last-child { margin-bottom: 0; }
 
+    .msg-content h1, .msg-content h2, .msg-content h3, .msg-content h4 {
+      font-family: var(--font-serif);
+      font-weight: 600;
+      color: var(--ivory);
+      margin-top: 28px;
+      margin-bottom: 10px;
+    }
+
+    .msg-content h1 { font-size: 22px; letter-spacing: -0.02em; border-bottom: 1px solid var(--gray-800); padding-bottom: 8px; }
+    .msg-content h2 { font-size: 18px; letter-spacing: -0.01em; }
+    .msg-content h3 { font-size: 15px; font-weight: 600; font-family: var(--font-sans); color: var(--gray-300); text-transform: uppercase; letter-spacing: 0.04em; font-size: 11.5px; margin-top: 24px; }
+    .msg-content h4 { font-size: 14px; font-family: var(--font-sans); }
+
+    .msg-content > *:first-child { margin-top: 0; }
+
+    /* ── Inline Code ─────────────────────────────────────── */
     .msg-content code {
       background: var(--ink);
-      padding: 2px 6px;
-      border-radius: 3px;
+      padding: 2px 8px;
+      border-radius: 4px;
       font-family: var(--font-mono);
       font-size: 12.5px;
+      color: var(--accent);
+      border: 1px solid var(--gray-800);
+      white-space: nowrap;
+    }
+
+    /* ── Code Blocks ─────────────────────────────────────── */
+    .msg-content pre {
+      background: var(--ink);
+      padding: 20px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--gray-800);
+      overflow-x: auto;
+      margin: 16px 0;
+      position: relative;
+    }
+
+    .msg-content pre code {
+      background: none;
+      padding: 0;
+      font-size: 13px;
+      color: var(--gray-300);
+      border: none;
+      line-height: 1.6;
+      white-space: pre;
+    }
+
+    /* ── Tables ──────────────────────────────────────────── */
+    .msg-content table {
+      border-collapse: collapse;
+      margin: 18px 0;
+      font-size: 13px;
+      width: 100%;
+      border: 1px solid var(--gray-800);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .msg-content thead { background: var(--ink); }
+
+    .msg-content th {
+      font-weight: 500;
+      color: var(--gray-400);
+      font-size: 10.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--gray-800);
+    }
+
+    .msg-content td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--gray-850);
       color: var(--gray-300);
     }
 
-    .msg-content pre {
-      background: var(--ink);
-      padding: 16px;
-      border-radius: var(--radius);
-      border: 1px solid var(--gray-800);
-      overflow-x: auto;
+    .msg-content tr:last-child td { border-bottom: none; }
+    .msg-content tr:hover td { background: var(--gray-850); }
+
+    /* ── Lists ───────────────────────────────────────────── */
+    .msg-content ul, .msg-content ol {
+      padding-left: 24px;
       margin: 12px 0;
     }
 
-    .msg-content pre code { background: none; padding: 0; font-size: 12.5px; }
-
-    .msg-content table {
-      border-collapse: collapse;
-      margin: 12px 0;
-      font-size: 13px;
-      width: 100%;
+    .msg-content li {
+      margin: 6px 0;
+      color: var(--gray-300);
+      line-height: 1.7;
     }
 
-    .msg-content th, .msg-content td {
-      border: 1px solid var(--gray-800);
-      padding: 8px 14px;
-      text-align: left;
+    .msg-content li::marker { color: var(--gray-600); }
+
+    .msg-content ul ul, .msg-content ol ol, .msg-content ul ol, .msg-content ol ul {
+      margin: 4px 0;
     }
 
-    .msg-content th {
-      background: var(--ink);
-      font-weight: 500;
-      color: var(--gray-400);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+    .msg-content li > p { margin: 4px 0; }
 
-    .msg-content h1, .msg-content h2, .msg-content h3 {
-      font-family: var(--font-serif);
-      font-weight: 400;
-      color: var(--ivory);
-    }
-
-    .msg-content h2 { font-size: 18px; margin: 20px 0 8px; }
-    .msg-content h3 { font-size: 15px; margin: 16px 0 6px; }
-
-    .msg-content ul, .msg-content ol { padding-left: 20px; margin: 8px 0; }
-    .msg-content li { margin: 4px 0; color: var(--gray-300); }
-
+    /* ── Blockquotes ─────────────────────────────────────── */
     .msg-content blockquote {
-      border-left: 2px solid var(--gray-700);
-      padding-left: 16px;
-      color: var(--gray-500);
-      margin: 12px 0;
-      font-style: italic;
+      border-left: 3px solid var(--accent);
+      padding: 12px 20px;
+      margin: 16px 0;
+      background: var(--accent-dim);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+      color: var(--gray-400);
     }
 
+    .msg-content blockquote p { margin: 0 0 8px; }
+    .msg-content blockquote p:last-child { margin: 0; }
+
+    /* ── Inline Formatting ───────────────────────────────── */
     .msg-content strong { color: var(--ivory); font-weight: 600; }
-    .msg-content a { color: var(--gray-300); text-decoration: underline; text-underline-offset: 2px; }
-    .msg-content a:hover { color: var(--ivory); }
+    .msg-content em { color: var(--gray-300); font-style: italic; }
+
+    .msg-content a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: all var(--transition);
+    }
+    .msg-content a:hover { border-color: var(--accent); }
+
+    /* ── Horizontal Rule ─────────────────────────────────── */
+    .msg-content hr {
+      border: none;
+      border-top: 1px solid var(--gray-800);
+      margin: 24px 0;
+    }
+
+    /* ── User message styling (plain text) ───────────────── */
+    .msg.user .msg-content {
+      color: var(--gray-300);
+      line-height: 1.65;
+    }
+
+    /* ── Message Footer (meta + feedback) ────────────────── */
+    .msg-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
 
     .msg-meta {
       font-size: 11px;
       color: var(--gray-700);
-      margin-top: 10px;
       font-family: var(--font-mono);
     }
 
+    .msg-feedback {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+
+    .msg:hover .msg-feedback { opacity: 1; }
+
+    .feedback-btn {
+      width: 28px;
+      height: 28px;
+      background: none;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      color: var(--gray-700);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      font-size: 14px;
+    }
+
+    .feedback-btn:hover { color: var(--gray-400); border-color: var(--gray-800); background: var(--gray-850); }
+    .feedback-btn.active-up { color: var(--green); border-color: var(--green); background: rgba(90,154,110,0.1); }
+    .feedback-btn.active-down { color: var(--red); border-color: var(--red); background: rgba(154,90,90,0.1); }
+
+    /* ── Typing Indicator ────────────────────────────────── */
     .typing-indicator {
       display: inline-flex;
       gap: 5px;
@@ -392,8 +573,8 @@
     }
 
     .typing-indicator span {
-      width: 5px;
-      height: 5px;
+      width: 4px;
+      height: 4px;
       background: var(--gray-600);
       border-radius: 50%;
       animation: blink 1.4s infinite;
@@ -403,11 +584,11 @@
     .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 
     @keyframes blink {
-      0%, 60%, 100% { opacity: 0.25; }
-      30% { opacity: 0.8; }
+      0%, 60%, 100% { opacity: 0.2; }
+      30% { opacity: 0.9; }
     }
 
-    /* ── Input ────────────────────────────────────────────── */
+    /* ── Input Area ──────────────────────────────────────── */
     .input-area {
       padding: 16px 32px 28px;
       flex-shrink: 0;
@@ -415,7 +596,7 @@
     }
 
     .input-container {
-      max-width: 760px;
+      max-width: 780px;
       margin: 0 auto;
     }
 
@@ -424,12 +605,15 @@
       align-items: flex-end;
       background: var(--ink);
       border: 1px solid var(--gray-800);
-      border-radius: 6px;
+      border-radius: var(--radius-lg);
       padding: 14px 16px;
-      transition: border-color 0.15s;
+      transition: border-color var(--transition), box-shadow var(--transition);
     }
 
-    .input-box:focus-within { border-color: var(--gray-600); }
+    .input-box:focus-within {
+      border-color: var(--gray-600);
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.03);
+    }
 
     .input-box textarea {
       flex: 1;
@@ -441,7 +625,7 @@
       font-size: 14px;
       resize: none;
       max-height: 180px;
-      line-height: 1.5;
+      line-height: 1.55;
     }
 
     .input-box textarea::placeholder { color: var(--gray-700); }
@@ -459,11 +643,11 @@
       justify-content: center;
       flex-shrink: 0;
       margin-left: 10px;
-      transition: background 0.15s;
+      transition: all var(--transition);
     }
 
-    .send-btn:hover { background: var(--gray-300); }
-    .send-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+    .send-btn:hover { background: var(--gray-200); transform: scale(1.04); }
+    .send-btn:disabled { opacity: 0.15; cursor: not-allowed; transform: none; }
 
     .input-hint {
       text-align: center;
@@ -472,13 +656,14 @@
       color: var(--gray-700);
     }
 
-    /* ── Responsive ───────────────────────────────────────── */
+    /* ── Responsive ──────────────────────────────────────── */
     @media (max-width: 768px) {
       .sidebar { display: none; }
-      .messages { padding: 20px 16px; }
+      .messages { padding: 24px 16px; }
       .input-area { padding: 12px 16px 20px; }
       .welcome-examples { grid-template-columns: 1fr; }
-      .welcome h1 { font-size: 32px; }
+      .welcome-brand h1 { font-size: 36px; }
+      .msg { gap: 12px; }
     }
   </style>
 </head>
@@ -490,14 +675,22 @@
       <div class="logo">m.murdock</div>
       <div class="logo-sub">Tax & Legal AI</div>
     </div>
+
     <button class="new-chat-btn" onclick="newConversation()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Nova consulta
     </button>
+
+    <div class="profile-card" id="profileCard">
+      <div class="profile-label">Perfil fiscal</div>
+      <div id="profileItems"></div>
+    </div>
+
     <div class="conversations" id="convList"></div>
+
     <div class="sidebar-footer">
       Fontes oficiais gov.br<br>
-      <a href="/docs" target="_blank">API</a> &middot; <a href="/api/sources" target="_blank">Fontes</a>
+      <a href="/docs" target="_blank">API</a> &middot; <a href="/api/sources" target="_blank">Fontes</a> &middot; <a href="/api/learning/stats" target="_blank">Learning</a>
     </div>
   </aside>
 
@@ -505,21 +698,23 @@
   <main class="main">
     <header class="main-header">
       <h2 id="headerTitle">Nova consulta</h2>
-      <div class="status-text">
+      <div class="status-badge">
         <span class="status-dot" id="statusDot"></span>
-        <span id="statusLabel">Conectado</span>
+        <span id="statusLabel">Conectando...</span>
       </div>
     </header>
 
     <div class="messages" id="messages">
       <div class="welcome" id="welcome">
-        <h1>m.murdock</h1>
-        <p>Consultor tributário, contabil e fiscal brasileiro.
-           Legislacao alimentada exclusivamente por fontes oficiais.</p>
+        <div class="welcome-brand">
+          <h1>m.murdock</h1>
+          <div class="tagline">Tributarista &middot; Contabilista &middot; Fiscalista</div>
+        </div>
+        <p>Consultor tributario de elite. Cada resposta fundamentada em legislacao oficial, jurisprudencia e doutrina. Direto ao ponto.</p>
         <div class="welcome-examples">
-          <button class="example-btn" onclick="askExample(this)">Qual o melhor regime tributario para uma empresa de TI com faturamento de R$300k/mes?</button>
-          <button class="example-btn" onclick="askExample(this)">Calcule a aliquota efetiva do Simples Nacional Anexo III para RBT12 de R$1.200.000</button>
-          <button class="example-btn" onclick="askExample(this)">Como funciona o split payment da reforma tributaria em 2026?</button>
+          <button class="example-btn" onclick="askExample(this)">Qual o melhor regime tributario para empresa de TI com faturamento de R$300k/mes?</button>
+          <button class="example-btn" onclick="askExample(this)">Calcule aliquota efetiva do Simples Anexo III para RBT12 de R$1.200.000</button>
+          <button class="example-btn" onclick="askExample(this)">Como funciona o split payment da reforma tributaria CBS/IBS em 2026?</button>
           <button class="example-btn" onclick="askExample(this)">Quais creditos de PIS/COFINS posso recuperar no Lucro Real?</button>
         </div>
       </div>
@@ -528,7 +723,7 @@
     <div class="input-area">
       <div class="input-container">
         <div class="input-box">
-          <textarea id="userInput" placeholder="Descreva sua consulta..." rows="1"
+          <textarea id="userInput" placeholder="Descreva sua consulta tributaria..." rows="1"
                     onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
           <button class="send-btn" id="sendBtn" onclick="sendMessage()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -540,33 +735,49 @@
   </main>
 
   <script>
+    // ── State ──────────────────────────────────────────────
     let conversationId = null;
     let isStreaming = false;
     let conversations = [];
+    let lastMsgId = null;
+
+    // Client ID persistente (localStorage)
+    function getClientId() {
+      let id = localStorage.getItem('murdock_client_id');
+      if (!id) {
+        id = 'client_' + crypto.randomUUID().slice(0, 12);
+        localStorage.setItem('murdock_client_id', id);
+      }
+      return id;
+    }
+    const CLIENT_ID = getClientId();
+
+    // ── Markdown Renderer (marked.js) ──────────────────────
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+      headerIds: false,
+      mangle: false,
+    });
+
+    // Custom renderer para links abrirem em nova aba
+    const renderer = new marked.Renderer();
+    renderer.link = function({ href, title, text }) {
+      const t = title ? ` title="${title}"` : '';
+      return `<a href="${href}"${t} target="_blank" rel="noopener">${text}</a>`;
+    };
+    marked.use({ renderer });
 
     function renderMd(text) {
-      let html = text
-        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="lang-$1">$2</code></pre>')
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-        .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-        .replace(/^[\-\*] (.+)$/gm, '<li>$1</li>')
-        .replace(/^\|(.+)\|$/gm, (match, content) => {
-          const cells = content.split('|').map(c => c.trim());
-          if (cells.every(c => /^[\-:]+$/.test(c))) return '';
-          return '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
-        });
-      html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-      html = html.replace(/(<tr>.*<\/tr>\n?)+/g, '<table>$&</table>');
-      html = html.replace(/^(?!<[hupltbo]|<\/)(.*\S.*)$/gm, '<p>$1</p>');
-      return html;
+      try {
+        return marked.parse(text);
+      } catch (e) {
+        // Fallback: texto puro com quebras de linha
+        return '<p>' + text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>') + '</p>';
+      }
     }
 
+    // ── UI Helpers ─────────────────────────────────────────
     function autoResize(el) {
       el.style.height = 'auto';
       el.style.height = Math.min(el.scrollHeight, 180) + 'px';
@@ -581,7 +792,8 @@
       m.scrollTop = m.scrollHeight;
     }
 
-    function addMessage(role, content, meta) {
+    // ── Messages ──────────────────────────────────────────
+    function addMessage(role, content, meta, msgId) {
       const w = document.getElementById('welcome');
       if (w) w.style.display = 'none';
       const msgs = document.getElementById('messages');
@@ -589,12 +801,22 @@
       div.className = `msg ${role}`;
       const av = role === 'user' ? 'Eu' : 'MM';
       const nm = role === 'user' ? 'Voce' : 'm.murdock';
+
+      const feedbackHtml = role === 'assistant' && msgId ? `
+        <div class="msg-feedback" data-msg-id="${msgId}">
+          <button class="feedback-btn" onclick="sendFeedback('${msgId}', 5, this)" title="Boa resposta">&#9650;</button>
+          <button class="feedback-btn" onclick="sendFeedback('${msgId}', 1, this)" title="Resposta ruim">&#9660;</button>
+        </div>` : '';
+
       div.innerHTML = `
         <div class="msg-avatar">${av}</div>
         <div class="msg-body">
           <div class="msg-name">${nm}</div>
           <div class="msg-content">${role === 'user' ? `<p>${content}</p>` : renderMd(content)}</div>
-          ${meta ? `<div class="msg-meta">${meta}</div>` : ''}
+          <div class="msg-footer">
+            <div class="msg-meta">${meta || ''}</div>
+            ${feedbackHtml}
+          </div>
         </div>`;
       msgs.appendChild(div);
       scrollToBottom();
@@ -614,23 +836,48 @@
           <div class="msg-content" id="streamContent">
             <div class="typing-indicator"><span></span><span></span><span></span></div>
           </div>
-          <div class="msg-meta" id="streamMeta"></div>
+          <div class="msg-footer">
+            <div class="msg-meta" id="streamMeta"></div>
+            <div class="msg-feedback" id="streamFeedback"></div>
+          </div>
         </div>`;
       msgs.appendChild(div);
       scrollToBottom();
     }
 
+    // ── Feedback ──────────────────────────────────────────
+    async function sendFeedback(msgId, rating, btn) {
+      try {
+        const res = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message_id: msgId, rating }),
+        });
+        // Visual feedback
+        const container = btn.parentElement;
+        container.querySelectorAll('.feedback-btn').forEach(b => {
+          b.classList.remove('active-up', 'active-down');
+          b.disabled = true;
+        });
+        btn.classList.add(rating >= 4 ? 'active-up' : 'active-down');
+        container.style.opacity = '1';
+      } catch (e) { console.error('Feedback erro:', e); }
+    }
+
+    // ── Conversations ─────────────────────────────────────
     function newConversation() {
       conversationId = null;
       document.getElementById('messages').innerHTML = `
         <div class="welcome" id="welcome">
-          <h1>m.murdock</h1>
-          <p>Consultor tributario, contabil e fiscal brasileiro.
-             Legislacao alimentada exclusivamente por fontes oficiais.</p>
+          <div class="welcome-brand">
+            <h1>m.murdock</h1>
+            <div class="tagline">Tributarista &middot; Contabilista &middot; Fiscalista</div>
+          </div>
+          <p>Consultor tributario de elite. Cada resposta fundamentada em legislacao oficial, jurisprudencia e doutrina. Direto ao ponto.</p>
           <div class="welcome-examples">
-            <button class="example-btn" onclick="askExample(this)">Qual o melhor regime tributario para uma empresa de TI com faturamento de R$300k/mes?</button>
-            <button class="example-btn" onclick="askExample(this)">Calcule a aliquota efetiva do Simples Nacional Anexo III para RBT12 de R$1.200.000</button>
-            <button class="example-btn" onclick="askExample(this)">Como funciona o split payment da reforma tributaria em 2026?</button>
+            <button class="example-btn" onclick="askExample(this)">Qual o melhor regime tributario para empresa de TI com faturamento de R$300k/mes?</button>
+            <button class="example-btn" onclick="askExample(this)">Calcule aliquota efetiva do Simples Anexo III para RBT12 de R$1.200.000</button>
+            <button class="example-btn" onclick="askExample(this)">Como funciona o split payment da reforma tributaria CBS/IBS em 2026?</button>
             <button class="example-btn" onclick="askExample(this)">Quais creditos de PIS/COFINS posso recuperar no Lucro Real?</button>
           </div>
         </div>`;
@@ -648,7 +895,6 @@
       const list = document.getElementById('convList');
       if (!conversations.length) { list.innerHTML = ''; return; }
 
-      // Agrupar por data
       const groups = {};
       const today = new Date().toDateString();
       const yesterday = new Date(Date.now() - 86400000).toDateString();
@@ -666,7 +912,7 @@
         html += `<div class="conv-date">${label}</div>`;
         items.forEach(c => {
           html += `<div class="conv-item ${c.id === conversationId ? 'active' : ''}" onclick="loadConv('${c.id}')">
-            <span class="conv-title">${c.title || 'Sem título'}</span>
+            <span class="conv-title">${c.title || 'Sem titulo'}</span>
             <button class="conv-delete" onclick="event.stopPropagation();deleteConv('${c.id}')" title="Excluir">&times;</button>
           </div>`;
         });
@@ -679,7 +925,7 @@
         const r = await fetch('/api/conversations');
         conversations = await r.json();
         updateConvList();
-      } catch (e) { console.error('Erro ao carregar conversas:', e); }
+      } catch (e) { console.error('Erro conversas:', e); }
     }
 
     async function loadConv(id) {
@@ -697,12 +943,11 @@
         const messages = await r.json();
         messages.forEach(m => {
           const meta = m.model_used ? `${m.model_used.replace('google-gla:','')} · ${m.latency_ms || 0}ms` : '';
-          addMessage(m.role, m.content, m.role === 'assistant' ? meta : '');
+          addMessage(m.role, m.content, m.role === 'assistant' ? meta : '', m.role === 'assistant' ? m.id : null);
         });
-
         const conv = conversations.find(c => c.id === id);
         document.getElementById('headerTitle').textContent = conv?.title || 'Consulta';
-      } catch (e) { console.error('Erro ao carregar mensagens:', e); }
+      } catch (e) { console.error('Erro mensagens:', e); }
     }
 
     async function deleteConv(id) {
@@ -711,9 +956,10 @@
         conversations = conversations.filter(c => c.id !== id);
         if (conversationId === id) newConversation();
         updateConvList();
-      } catch (e) { console.error('Erro ao deletar:', e); }
+      } catch (e) { console.error('Erro deletar:', e); }
     }
 
+    // ── Send Message ──────────────────────────────────────
     async function sendMessage() {
       const input = document.getElementById('userInput');
       const msg = input.value.trim();
@@ -729,7 +975,12 @@
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: msg, conversation_id: conversationId, stream: true }),
+          body: JSON.stringify({
+            message: msg,
+            conversation_id: conversationId,
+            stream: true,
+            client_id: CLIENT_ID,
+          }),
         });
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -756,9 +1007,11 @@
                   const info = JSON.parse(data);
                   conversationId = info.conversation_id;
                   const meta = document.getElementById('streamMeta');
-                  if (meta) meta.textContent = `${info.model.replace('google-gla:','')} \u00b7 ${info.latency_ms}ms`;
-                  document.getElementById('headerTitle').textContent = msg.slice(0, 55);
+                  if (meta) meta.textContent = `${info.model.replace('google-gla:','')} · ${info.latency_ms}ms`;
+                  document.getElementById('headerTitle').textContent = msg.slice(0, 60);
                   loadConversations();
+                  // Atualizar perfil após cada mensagem
+                  loadProfile();
                 } catch (e) {}
               } else if (eventType === 'error') {
                 contentEl.innerHTML = `<p style="color:var(--gray-400)">Erro: ${data}</p>`;
@@ -772,13 +1025,44 @@
       } finally {
         isStreaming = false;
         document.getElementById('sendBtn').disabled = false;
-        ['streamMsg','streamContent','streamMeta'].forEach(id => {
+        ['streamMsg','streamContent','streamMeta','streamFeedback'].forEach(id => {
           const el = document.getElementById(id);
           if (el) el.removeAttribute('id');
         });
       }
     }
 
+    // ── Profile ──────────────────────────────────────────
+    async function loadProfile() {
+      try {
+        const r = await fetch(`/api/profile/${CLIENT_ID}`);
+        const p = await r.json();
+        const card = document.getElementById('profileCard');
+        const items = document.getElementById('profileItems');
+
+        if (!p.exists) { card.classList.remove('visible'); return; }
+
+        const fields = [];
+        if (p.regime_tributario) fields.push(['Regime', p.regime_tributario.replace('_', ' ')]);
+        if (p.cnae_principal) fields.push(['CNAE', p.cnae_principal]);
+        if (p.uf) fields.push(['UF', p.uf]);
+        if (p.tipo_atividade) fields.push(['Atividade', p.tipo_atividade]);
+        if (p.faturamento_12m) {
+          const v = p.faturamento_12m;
+          fields.push(['Fat. 12m', v >= 1e6 ? `R$${(v/1e6).toFixed(1)}M` : `R$${(v/1e3).toFixed(0)}k`]);
+        }
+        if (p.cnpj) fields.push(['CNPJ', p.cnpj.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5')]);
+
+        if (fields.length === 0) { card.classList.remove('visible'); return; }
+
+        items.innerHTML = fields.map(([k, v]) =>
+          `<div class="profile-item"><span>${k}</span><span>${v}</span></div>`
+        ).join('');
+        card.classList.add('visible');
+      } catch (e) { /* silencioso */ }
+    }
+
+    // ── Health ──────────────────────────────────────────
     async function checkHealth() {
       try {
         const r = await fetch('/api/health');
@@ -786,18 +1070,22 @@
         const dot = document.getElementById('statusDot');
         const label = document.getElementById('statusLabel');
         if (d.status === 'ok') {
-          dot.style.background = '#4a9';
-          label.textContent = `${d.knowledge_base?.total_chunks || 0} chunks`;
+          dot.style.background = 'var(--green)';
+          const chunks = d.knowledge_base?.total_chunks || 0;
+          const docs = d.knowledge_base?.documentos || 0;
+          label.textContent = `${chunks.toLocaleString()} chunks · ${docs} fontes`;
         }
       } catch (e) {
-        document.getElementById('statusDot').style.background = '#a44';
+        document.getElementById('statusDot').style.background = 'var(--red)';
         document.getElementById('statusLabel').textContent = 'Offline';
       }
     }
 
+    // ── Init ──────────────────────────────────────────────
     document.getElementById('userInput').focus();
     checkHealth();
     loadConversations();
+    loadProfile();
     setInterval(checkHealth, 30000);
   </script>
 </body>

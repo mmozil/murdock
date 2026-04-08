@@ -31,7 +31,7 @@ src/
     config.py              → Pydantic Settings (DATABASE_URL, GEMINI_API_KEY, etc.)
     database.py            → AsyncPG engine, session factory, init_db()
   models/
-    tables.py              → Document, Chunk (pgvector 768d), Conversation, Message, Feedback
+    tables.py              → Document, Chunk (pgvector 768d), Conversation, Message, Feedback, ClientProfile
   rag/
     embeddings.py          → Gemini embedding-001 (768d, LRU cache)
     search.py              → Hybrid search: pgvector cosine + tsvector BM25 + RRF fusion
@@ -41,10 +41,12 @@ src/
   tools/
     tools.py               → 7 tools Pydantic AI (search_law, calculate_tax, check_ncm, reform_2026, credit_recovery, calendar, jurisprudence)
   services/
-    agent.py               → Pydantic AI agent (Gemini Flash + fallback Claude), chat + chat_stream
+    agent.py               → Pydantic AI agent (Gemini Flash + fallback Claude), chat + chat_stream, dynamic prompt
+    memory.py              → Client Memory: extração de perfil fiscal, persistência, injeção no prompt
+    learning.py            → Learning Loop: aprende com feedback positivo + conversas engajadas → embeda Q&A no RAG
   api/
     schemas.py             → Pydantic request/response models
-    routes.py              → POST /chat (SSE), POST /ingest, GET /status, GET /health, GET /sources, POST /feedback
+    routes.py              → POST /chat (SSE), POST /ingest, POST /ingest-text, GET /status, GET /health, GET /sources, POST /feedback, GET /conversations, GET /conversations/{id}/messages, DELETE /conversations/{id}, GET /profile/{id}, PUT /profile/{id}, GET /learning/stats
   static/
     index.html             → Chat UI Harvey.ai design (m.murdock, warm neutrals, Source Serif 4, SSE streaming)
 ```
@@ -52,11 +54,16 @@ src/
 ## Key Patterns
 
 - **Hybrid Search (RRF)**: Dense (pgvector cosine) + Sparse (tsvector ts_rank_cd) + RRF fusion. Score = sum(1/(k + rank_i)), k=60.
-- **Agent Framework**: Pydantic AI v0.2+. Tools recebem `RunContext[MurdockDeps]` com sessão DB. Model fallback: Gemini Flash → Claude Sonnet.
+- **Agent Framework**: Pydantic AI v0.2+. Tools recebem `RunContext[MurdockDeps]` com sessão DB. Model fallback: Gemini Flash → Claude Sonnet. Histórico de conversa (últimas 20 msgs) enviado via `message_history` param.
 - **SSE Streaming**: `sse-starlette` no backend, `EventSource` no frontend. Events: `token`, `done`, `error`.
 - **Embeddings**: Gemini embedding-001, 768 dimensões, LRU cache 1000 entries. Task types: RETRIEVAL_DOCUMENT (ingest), RETRIEVAL_QUERY (search).
 - **Crawler**: Domain validation (.gov.br, .jus.br, .leg.br, .ibpt.org.br). Browser-like headers. Parsers: HTML (BeautifulSoup), JSON API. Dedup via SHA-256 content hash.
 - **Chunking**: 1000 chars, 150 overlap, quebra natural em Art./§/parágrafo.
+- **Geo-blocking**: Servidor Hetzner (IP alemão) é bloqueado por alguns sites .gov.br. Usar `POST /api/ingest-text` para ingestão direta de texto copiado manualmente dessas fontes.
+- **Histórico de conversas**: Sidebar lista conversas anteriores. Endpoints: `GET /api/conversations`, `GET /api/conversations/{id}/messages`, `DELETE /api/conversations/{id}`.
+- **Client Memory**: Perfil fiscal persistente por `client_id` (regime, CNAE, UF, faturamento). Extração automática de dados das mensagens do usuário via regex. Injetado no prompt como contexto — o agente nunca pede informações que já tem.
+- **Learning Loop**: Após feedback positivo (rating >= 4) ou conversa engajada (6+ msgs), Q&A validados são embeddados como chunks (`source_type=learned_qa`) e surfam na hybrid search em consultas futuras.
+- **Feedback UI**: Thumbs up/down em cada resposta do assistant. Feedback positivo dispara learning loop automaticamente.
 
 ## Environment
 
@@ -74,7 +81,9 @@ API_KEY=...                # Auth para endpoints admin
 - **Nome visual**: "m.murdock" (Source Serif 4) + "TAX & LEGAL AI" (subtítulo)
 - **Paleta**: warm grays (#0f0e0d ink → #fafaf9 ivory)
 - **Fontes**: Source Serif 4 (headlines, Google Fonts) + system sans (body)
-- **Radius**: 4px, sem cores de acento, espaçamento generoso
+- **Radius**: 4px / 8px, accent dourado sutil (#c9a96e) em links e blockquotes, espaçamento generoso
+- **Feedback**: Thumbs up/down com estados visuais (verde/vermelho) em hover
+- **Perfil sidebar**: Card com dados fiscais do cliente, atualizado automaticamente
 
 ## Deploy
 

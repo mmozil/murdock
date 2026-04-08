@@ -47,12 +47,12 @@ async def chat_endpoint(
     """Chat com o Murdock — streaming SSE ou resposta completa."""
     if req.stream:
         async def event_generator():
-            async for event in chat_stream(db, req.message, req.conversation_id):
+            async for event in chat_stream(db, req.message, req.conversation_id, req.client_id):
                 yield event
 
         return EventSourceResponse(event_generator())
 
-    result = await chat(db, req.message, req.conversation_id)
+    result = await chat(db, req.message, req.conversation_id, req.client_id)
     return ChatResponse(**result)
 
 
@@ -225,15 +225,26 @@ async def feedback_endpoint(
     req: FeedbackRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Registra feedback sobre uma resposta."""
+    """Registra feedback sobre uma resposta. Feedback positivo (>=4) dispara learning loop."""
     fb = FeedbackModel(
         message_id=req.message_id,
         rating=req.rating,
         comment=req.comment,
     )
     db.add(fb)
+    await db.flush()
+
+    # Learning loop: aprender com feedback positivo
+    learn_result = {}
+    if req.rating and req.rating >= 4:
+        try:
+            from src.services.learning import learn_from_feedback
+            learn_result = await learn_from_feedback(db, req.message_id, req.rating)
+        except Exception as e:
+            logger.warning(f"Learning from feedback falhou: {e}")
+
     await db.commit()
-    return {"status": "ok"}
+    return {"status": "ok", "learning": learn_result}
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -285,3 +296,60 @@ async def sources_endpoint():
         }
         for f in FONTES
     ]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Client Profile
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/profile/{client_id}")
+async def get_profile_endpoint(
+    client_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retorna perfil do cliente."""
+    from src.services.memory import get_profile
+    profile = await get_profile(db, client_id)
+    if not profile:
+        return {"client_id": client_id, "exists": False}
+    return {
+        "client_id": client_id,
+        "exists": True,
+        "nome": profile.nome,
+        "cnpj": profile.cnpj,
+        "regime_tributario": profile.regime_tributario,
+        "cnae_principal": profile.cnae_principal,
+        "uf": profile.uf,
+        "municipio": profile.municipio,
+        "tipo_atividade": profile.tipo_atividade,
+        "faturamento_12m": profile.faturamento_12m,
+        "funcionarios": profile.funcionarios,
+        "porte": profile.porte,
+        "total_conversas": profile.total_conversas,
+    }
+
+
+@router.put("/profile/{client_id}")
+async def update_profile_endpoint(
+    client_id: str,
+    req: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    """Atualiza perfil do cliente manualmente."""
+    from src.services.memory import update_profile
+    profile = await update_profile(db, client_id, req)
+    await db.commit()
+    return {"status": "ok", "client_id": client_id}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Learning Stats
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/learning/stats")
+async def learning_stats_endpoint(
+    db: AsyncSession = Depends(get_db),
+):
+    """Estatísticas do learning loop."""
+    from src.services.learning import get_learning_stats
+    return await get_learning_stats(db)
