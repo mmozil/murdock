@@ -6,6 +6,7 @@ from typing import Optional
 
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.messages import ModelRequest, ModelResponse, UserPromptPart, TextPart
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -107,8 +108,10 @@ Direto. Preciso. Confiante. Como um advogado tributarista sênior que cobra R$2.
 # Provider OpenAI-compatible: MiniMax (default), OpenRouter, OpenAI ou endpoint local.
 primary_model = OpenAIModel(
     settings.DEFAULT_LLM_MODEL,
-    base_url=settings.DEFAULT_LLM_BASE_URL,
-    api_key=settings.DEFAULT_LLM_API_KEY or "no-key",
+    provider=OpenAIProvider(
+        base_url=settings.DEFAULT_LLM_BASE_URL,
+        api_key=settings.DEFAULT_LLM_API_KEY or "no-key",
+    ),
 )
 
 murdock_agent = Agent(
