@@ -103,11 +103,12 @@ Direto. Preciso. Confiante. Como um advogado tributarista sênior que cobra R$2.
 # Agente Pydantic AI
 # ═══════════════════════════════════════════════════════════════════════════
 
-# MiniMax M2.5 via OpenAI-compatible API
+# Modelo primário construído 100% a partir do ambiente (zero hardcode).
+# Provider OpenAI-compatible: MiniMax (default), OpenRouter, OpenAI ou endpoint local.
 primary_model = OpenAIModel(
-    settings.PRIMARY_MODEL,
-    base_url=settings.PRIMARY_BASE_URL,
-    api_key=settings.MINIMAX_API_KEY or "no-key",
+    settings.DEFAULT_LLM_MODEL,
+    base_url=settings.DEFAULT_LLM_BASE_URL,
+    api_key=settings.DEFAULT_LLM_API_KEY or "no-key",
 )
 
 murdock_agent = Agent(
@@ -241,8 +242,8 @@ async def chat(
 
     # Rodar agente
     deps = MurdockDeps(db=db)
-    model_name = settings.PRIMARY_MODEL
-    fallback_model = f"anthropic:{settings.FALLBACK_MODEL}"
+    model_name = settings.DEFAULT_LLM_MODEL
+    fallback_model = f"{settings.FALLBACK_LLM_PROVIDER}:{settings.FALLBACK_LLM_MODEL}"
 
     try:
         result = await murdock_agent.run(
@@ -322,8 +323,8 @@ async def chat_stream(
     full_prompt = user_message + dynamic_ctx if dynamic_ctx else user_message
 
     deps = MurdockDeps(db=db)
-    model_name = settings.PRIMARY_MODEL
-    fallback_model = f"anthropic:{settings.FALLBACK_MODEL}"
+    model_name = settings.DEFAULT_LLM_MODEL
+    fallback_model = f"{settings.FALLBACK_LLM_PROVIDER}:{settings.FALLBACK_LLM_MODEL}"
 
     full_response = []
     model_used = model_name

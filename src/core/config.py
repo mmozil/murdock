@@ -10,13 +10,19 @@ class Settings(BaseSettings):
     # ── Redis ─────────────────────────────────────
     REDIS_URL: Optional[str] = "redis://localhost:6379/5"
 
-    # ── LLM ───────────────────────────────────────
-    MINIMAX_API_KEY: Optional[str] = None
-    GEMINI_API_KEY: Optional[str] = None
+    # ── LLM (env-based, padrão Tier Agent — zero hardcode) ──
+    # Provider primário e credenciais vêm 100% do ambiente.
+    # Default = MiniMax via endpoint OpenAI-compatible.
+    DEFAULT_LLM_PROVIDER: str = "minimax"
+    DEFAULT_LLM_MODEL: str = "MiniMax-M2"
+    DEFAULT_LLM_BASE_URL: str = "https://api.minimax.io/v1"
+    DEFAULT_LLM_API_KEY: Optional[str] = None
+
+    # Fallback (acionado se o provider primário falhar)
+    FALLBACK_LLM_PROVIDER: str = "anthropic"
+    FALLBACK_LLM_MODEL: str = "claude-sonnet-4-20250514"
     ANTHROPIC_API_KEY: Optional[str] = None
-    PRIMARY_MODEL: str = "MiniMax-M2.5"
-    PRIMARY_BASE_URL: str = "https://api.minimax.io/v1"
-    FALLBACK_MODEL: str = "claude-sonnet-4-20250514"
+    GEMINI_API_KEY: Optional[str] = None
 
     # ── Embeddings ────────────────────────────────
     EMBEDDING_MODEL: str = "gemini-embedding-001"
