@@ -8,6 +8,22 @@ Murdock é um agente IA especializado em direito tributário, contábil e fiscal
 
 > **Config LLM (jun/2026):** DB-driven, configurável pela UI (padrão Tier Agent). O usuário escolhe quais LLMs, em que ordem e liga/desliga cada uma em **Configurações → LLM** (link "LLM" no rodapé da sidebar do chat). Persistido em `llm_providers` (sem redeploy). As envs `DEFAULT_LLM_*`/`FALLBACK_LLM_*` agora servem só de **SEED** no 1º boot (`seed_from_env_if_empty`). `pydantic-ai` pinado em `==1.104.0` (na 1.x, `base_url`/`api_key` vão via `OpenAIProvider`, não direto no `OpenAIModel`). MiniMax-M2 é modelo de raciocínio: emite `<think>...</think>` no conteúdo — `_strip_reasoning()` + `_stream_filtered()` em `agent.py` removem isso da saída (stream e resposta final).
 
+## Feeds de atualização de leis (GRATUITOS, jun/2026)
+
+Pipeline pra manter a knowledge base sempre atualizada com as leis. Módulo `src/crawler/feeds.py` (fetchers + orquestradores `run_*` que reusam `ingest.upsert_document`), scheduler `src/scheduler.py` (APScheduler), rotas admin `src/api/feeds_routes.py` (`/api/feeds/*`, X-API-Key). Toda ingestão é dedup por `content_hash` (re-ingere só o delta). Proxy de saída opcional `FEEDS_HTTP_PROXY` (válvula p/ geo-block gov.br).
+
+**Status verificado dos feeds (jun/2026):**
+- **DOU via INLABS** ✅ — full text de TODA norma nova (leis, decretos, INs RFB, portarias, convênios). `POST logar.php` (cookie `inlabs_session_cookie`) → `GET index.php?p=YYYY-MM-DD&dl=YYYY-MM-DD-DO1.zip` (header `origem: 736372697074`) → ZIP de XMLs `<article><body><Identifica/Ementa/Texto>`. **Requer conta grátis** em inlabs.in.gov.br → setar `INLABS_EMAIL`/`INLABS_PASSWORD` no Coolify. Sem creds = feed desativado (graceful). Cron diário 10:30 UTC. Filtra por `FEEDS_TAX_KEYWORDS`, teto `FEEDS_DOU_MAX_ARTIGOS`. **É o motor do "sempre atualizado".**
+- **Querido Diário** ✅ — diários MUNICIPAIS (ISS). Base `https://api.queridodiario.ok.org.br` (NÃO `/api`). Sem auth, funciona global. Setar `FEEDS_MUNICIPIOS_IBGE` (CSV de códigos IBGE) p/ ativar o cron semanal; vazio = não roda. Rota manual aceita `territory_ids`.
+- **Câmara dos Deputados** ✅ — radar de PLs/PLPs tributários (discovery, não lei em vigor). `dadosabertos.camara.leg.br/api/v2/proposicoes`. Funciona global. Cron semanal (seg 11:00 UTC).
+- **LexML SRU** ❌ — **endpoint `/busca/SRU` fora do ar** (404; o wrapper de 2019 usava esse path, o portal moderno é HTML-only). Código mantido + rota manual + `LEXML_SRU_URL` overridável (se restaurarem o SRU, só apontar a env). **NÃO está no scheduler** (não roda job que sempre falha).
+
+**Gotcha geo-block:** o servidor é Hetzner (Alemanha); fontes gov.br podem bloquear. Verificado daqui: Câmara e INLABS alcançáveis, Querido Diário (cloud) OK. Se DOU/gov.br bloquear de prod, setar `FEEDS_HTTP_PROXY` (proxy BR) — os feeds já o respeitam via `_http()`. Fallback manual sempre disponível: `POST /api/ingest-text`.
+
+**Rotas admin** (`/api/feeds/*`, X-API-Key): `GET /status`, `POST /dou {data?}`, `POST /lexml {query}`, `POST /lexml/recentes?dias=`, `POST /querido-diario {territory_ids?}`, `POST /camara {keywords}`. Use pra validar cada feed em prod e ver contagens reais.
+
+**Pendência operacional:** registrar conta INLABS + setar `INLABS_EMAIL`/`INLABS_PASSWORD` (libera o DOU diário, o feed de maior valor). Opcional: `FEEDS_MUNICIPIOS_IBGE` p/ ISS municipal.
+
 ## Provedores de LLM configuráveis (DB-driven)
 
 Tabela `llm_providers` (criada no startup via `Base.metadata.create_all`): `provider`, `default_model`, `api_key_enc` (Fernet), `base_url`, `temperature`, `max_tokens`, `timeout_s`, `active` (on/off), `priority` (menor = primeiro), `label`.

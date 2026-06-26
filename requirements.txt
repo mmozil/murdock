@@ -19,6 +19,9 @@ alembic>=1.14.0
 # ── Cache ──────────────────────────────────────────────────────
 redis>=5.2.0
 
+# ── Scheduler (feeds de atualização automática de leis) ────────
+apscheduler>=3.10.0
+
 # ── RAG / Crawler ─────────────────────────────────────────────
 httpx[http2]>=0.28.0
 beautifulsoup4>=4.12.0

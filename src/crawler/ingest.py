@@ -117,6 +117,9 @@ async def ingest_fonte(db: AsyncSession, fonte_id: str) -> dict:
 async def ingest_todas(db: AsyncSession, source_type: str = None) -> dict:
     """Ingere todas as fontes ativas."""
     fontes = get_fontes_ativas()
+    # Entradas parser="feed" (DOU/LexML/Querido Diário) NÃO são ingeridas aqui —
+    # rodam via scheduler / rotas /api/feeds/*. Só documentam procedência no /api/sources.
+    fontes = [f for f in fontes if f.parser in ("html", "api_json")]
     if source_type:
         fontes = [f for f in fontes if f.source_type == source_type]
 
@@ -141,6 +144,74 @@ async def ingest_todas(db: AsyncSession, source_type: str = None) -> dict:
         "total_chunks": total,
         "resultados": resultados,
     }
+
+
+async def upsert_document(
+    db: AsyncSession,
+    *,
+    source_id: str,
+    title: str,
+    url: str,
+    source_type: str,
+    orgao: str = "",
+    fundamentacao: str = "",
+    text: str,
+    metadata: Optional[dict] = None,
+    commit: bool = True,
+) -> dict:
+    """Salva/atualiza um Document a partir de texto cru (dedup por hash → chunk → embed).
+
+    Reutilizável pelos feeds (DOU, LexML, Querido Diário). NÃO chama update_search_vectors
+    (o caller decide quando rodar, pra fazer 1 vez no fim de um lote). Retorna {status, chunks}.
+    """
+    cleaned = _clean(text or "")
+    if len(cleaned) < 80:
+        return {"status": "vazio", "chunks": 0}
+
+    content_hash = hashlib.sha256(cleaned.encode()).hexdigest()[:16]
+    doc = (await db.execute(
+        select(Document).where(Document.source_id == source_id)
+    )).scalar_one_or_none()
+
+    if doc and doc.content_hash == content_hash:
+        return {"status": "inalterado", "chunks": doc.total_chunks or 0}
+
+    if doc:
+        await db.execute(delete(Chunk).where(Chunk.document_id == doc.id))
+        doc.content_hash = content_hash
+        doc.raw_size = len(cleaned)
+        doc.title = title or doc.title
+        doc.crawled_at = datetime.now(timezone.utc)
+    else:
+        doc = Document(
+            source_id=source_id, title=title, url=url, source_type=source_type,
+            orgao=orgao, fundamentacao=fundamentacao, content_hash=content_hash,
+            raw_size=len(cleaned),
+        )
+        db.add(doc)
+        await db.flush()
+
+    meta = {"source_id": source_id, "url": url}
+    if metadata:
+        meta.update(metadata)
+
+    count = 0
+    for i, ct in enumerate(chunk_text(cleaned)):
+        emb = generate_embedding(ct)
+        if not emb:
+            continue
+        db.add(Chunk(
+            document_id=doc.id, content=ct, embedding=emb, chunk_index=i,
+            section=_detect_section(ct), metadata_=meta,
+        ))
+        count += 1
+        if count % 50 == 0:
+            await db.flush()
+
+    doc.total_chunks = count
+    if commit:
+        await db.commit()
+    return {"status": "ok", "chunks": count}
 
 
 async def update_search_vectors(db: AsyncSession):

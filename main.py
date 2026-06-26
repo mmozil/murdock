@@ -11,6 +11,7 @@ from src.core.config import settings
 from src.core.database import async_session, init_db
 from src.api.routes import router
 from src.api.llm_routes import router as llm_router
+from src.api.feeds_routes import router as feeds_router
 
 logging.basicConfig(
     level=logging.INFO if settings.ENVIRONMENT == "production" else logging.DEBUG,
@@ -37,7 +38,22 @@ async def lifespan(app: FastAPI):
     except Exception as e:  # noqa: BLE001
         logger.warning("Seed de provedores de LLM falhou (seguindo sem): %s", e)
 
+    # Scheduler de feeds (atualização automática de leis — DOU diário, LexML semanal)
+    try:
+        from src.scheduler import init_scheduler
+
+        init_scheduler()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Scheduler de feeds não iniciou (seguindo sem): %s", e)
+
     yield
+
+    try:
+        from src.scheduler import shutdown_scheduler
+
+        shutdown_scheduler()
+    except Exception:
+        pass
 
     logger.info("═══ MURDOCK encerrado ═══")
 
@@ -67,6 +83,7 @@ app.add_middleware(
 # API routes
 app.include_router(router, prefix="/api")
 app.include_router(llm_router, prefix="/api")
+app.include_router(feeds_router, prefix="/api")
 
 # Static files (frontend)
 app.mount("/static", StaticFiles(directory="src/static"), name="static")

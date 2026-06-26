@@ -87,6 +87,30 @@ FONTES: list[FonteOficial] = [
         "https://www8.receita.fazenda.gov.br/SimplesNacional/Legislacao/Resolucoes.aspx",
         "fiscal_simples", "html", "CGSN",
         "LC 123/2006 art. 2º", "Resoluções: tabelas, sublimites, MEI, atividades"),
+
+    # ── Feeds de atualização automática (GRATUITOS) ──────────────
+    # Estes não são ingeridos pelo /ingest (parser="feed"); rodam via scheduler /
+    # rotas /api/feeds/*. Ficam aqui pra documentar a procedência no /api/sources.
+    FonteOficial("dou_inlabs", "DOU — Diário Oficial da União (INLABS)",
+        "https://inlabs.in.gov.br/", "dou_norma", "feed", "Imprensa Nacional",
+        "Lei 10.520/2002 (Imprensa Oficial)",
+        "Full text de TODA norma nova (leis, decretos, INs RFB, portarias, convênios). Diário."),
+    FonteOficial("lexml_legislacao", "LexML — Legislação (SRU)",
+        "https://www.lexml.gov.br/", "lexml_legislacao", "feed", "LexML Brasil (Senado)",
+        "Rede de Informação Legislativa e Jurídica",
+        "Legislação federal/estadual/municipal — metadados + ementa via SRU/CQL."),
+    FonteOficial("lexml_jurisprudencia", "LexML — Jurisprudência STF/STJ (SRU)",
+        "https://www.lexml.gov.br/", "lexml_jurisprudencia", "feed", "LexML Brasil (Senado)",
+        "Rede de Informação Legislativa e Jurídica",
+        "Acórdãos e súmulas STF/STJ — metadados + ementa via SRU/CQL."),
+    FonteOficial("querido_diario", "Querido Diário — Diários Municipais (ISS)",
+        "https://queridodiario.ok.org.br/", "diario_municipal", "feed", "Open Knowledge Brasil",
+        "Lei de Acesso à Informação 12.527/2011",
+        "Diários oficiais municipais (ISS) via API REST pública. Sob demanda por município IBGE."),
+    FonteOficial("camara_proposicoes", "Câmara dos Deputados — Proposições (radar)",
+        "https://dadosabertos.camara.leg.br/", "proposicao_camara", "feed", "Câmara dos Deputados",
+        "Dados Abertos da Câmara",
+        "Radar de PLs/PLPs tributários em tramitação (discovery; não é lei em vigor)."),
 ]
 
 

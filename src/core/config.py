@@ -45,6 +45,39 @@ class Settings(BaseSettings):
     MAX_RESULTS: int = 8
     RRF_K: int = 60
 
+    # ── Feeds (atualização automática de leis — todas fontes GRATUITAS) ──
+    ENABLE_FEEDS_SCHEDULER: bool = True   # liga os crons (DOU diário, LexML/jurisprudência semanal)
+
+    # DOU via INLABS (Imprensa Nacional) — full text de TODA norma nova. Requer conta grátis.
+    INLABS_EMAIL: Optional[str] = None
+    INLABS_PASSWORD: Optional[str] = None
+    FEEDS_DOU_SECOES: str = "DO1"          # DO1 = Seção 1 (atos normativos). Espaço-separado.
+    FEEDS_DOU_MAX_ARTIGOS: int = 150       # teto/dia após filtro (controla custo de embedding)
+    FEEDS_TAX_KEYWORDS: str = (
+        "tributár,tributo,imposto,ICMS,ISS,PIS,Cofins,IRPJ,CSLL,IRRF,"
+        "Simples Nacional,MEI,CBS,IBS,IPI,DIFAL,substituição tributária,"
+        "Receita Federal,CONFAZ,CGSN,solução de consulta,instrução normativa,"
+        "NCM,SPED,reforma tributária,crédito tributário"
+    )
+
+    # LexML SRU — ⚠️ endpoint /busca/SRU verificado FORA DO AR (jun/2026, retorna 404; o
+    # wrapper de 2019 usava esse path). Mantido como parâmetro: se o LexML restaurar o SRU
+    # (ou expuser outro), basta apontar LEXML_SRU_URL pra ele que o feed volta a funcionar.
+    # Por isso NÃO está no scheduler (não roda job que sempre falha); só na rota manual.
+    LEXML_SRU_URL: str = "https://www.lexml.gov.br/busca/SRU"
+    FEEDS_LEXML_MAX: int = 80              # teto de registros por consulta
+
+    # Querido Diário (ISS municipal) — CSV de territory_ids IBGE; vazio = não roda
+    QUERIDO_DIARIO_API: str = "https://api.queridodiario.ok.org.br"
+    FEEDS_MUNICIPIOS_IBGE: str = ""
+
+    # Câmara dos Deputados (radar de PLs/PLPs tributários — discovery, não lei em vigor)
+    CAMARA_API: str = "https://dadosabertos.camara.leg.br/api/v2"
+
+    # Proxy de saída opcional (ex: proxy BR) — válvula de escape p/ fontes gov.br que
+    # façam geo-block do IP alemão do Hetzner. Vazio = conexão direta. Aplica-se aos feeds.
+    FEEDS_HTTP_PROXY: Optional[str] = None
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 
