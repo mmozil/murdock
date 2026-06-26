@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # ── Auth ──────────────────────────────────────
     SECRET_KEY: str = "change-me-in-production"
     API_KEY: str = "murdock-api-key-change-me"
+    # Login com Google (Google Identity Services). Vazio = botão Google não aparece.
+    # Criar OAuth Client ID (Web) no Google Cloud Console com origem https://specter.hovio.com.br.
+    GOOGLE_CLIENT_ID: Optional[str] = None
 
     # ── Server ────────────────────────────────────
     ENVIRONMENT: str = "development"

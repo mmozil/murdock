@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Specter — Tax & Legal AI</title>
   <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
+    /* Fontes ≈ Harvey.ai: Newsreader (serif editorial, ≈ HarveySerif) + Inter (grotesca, ≈ Diatype).
+       Harvey usa fontes proprietárias (HarveySerifFont + Diatype/Dinamo) — estas são as free mais próximas. */
+    @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600;700&display=swap');
 
     :root {
       --ink: #0f0e0d;
@@ -21,12 +24,14 @@
       --gray-200: #e5e5e3;
       --gray-100: #f2f1f0;
       --ivory: #fafaf9;
-      --accent: #c9a96e;
-      --accent-dim: rgba(201,169,110,0.12);
+      /* Harvey é monocromática (ink + ivory) — sem accent cromático. "Accent" = ivory:
+         botões primários = ivory bg + ink text (igual "Request a Demo" do harvey.ai). */
+      --accent: #fafaf9;
+      --accent-dim: rgba(250,250,249,0.12);
       --green: #5a9a6e;
       --red: #9a5a5a;
-      --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
-      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
       --radius: 4px;
       --radius-lg: 8px;
@@ -431,13 +436,13 @@
 
     /* ── Inline Code (backtick) ──────────────────────────── */
     .msg-content code {
-      background: rgba(201,169,110,0.08);
+      background: var(--gray-850);
       padding: 2px 7px;
       border-radius: 4px;
       font-family: var(--font-mono);
       font-size: 13px;
-      color: var(--accent);
-      border: 1px solid rgba(201,169,110,0.15);
+      color: var(--ivory);
+      border: 1px solid var(--gray-800);
       white-space: nowrap;
     }
 
@@ -552,10 +557,10 @@
 
     /* ── Blockquotes ─────────────────────────────────────── */
     .msg-content blockquote {
-      border-left: 3px solid var(--accent);
+      border-left: 3px solid var(--gray-700);
       padding: 14px 20px;
       margin: 20px 0;
-      background: rgba(201,169,110,0.06);
+      background: rgba(250,250,249,0.05);
       border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
       color: var(--gray-400);
       font-size: 14px;
@@ -570,12 +575,12 @@
     .msg-content em { color: var(--gray-300); font-style: italic; }
 
     .msg-content a {
-      color: var(--accent);
+      color: var(--ivory);
       text-decoration: none;
-      border-bottom: 1px solid rgba(201,169,110,0.3);
+      border-bottom: 1px solid rgba(250,250,249,0.35);
       transition: all var(--transition);
     }
-    .msg-content a:hover { border-color: var(--accent); }
+    .msg-content a:hover { border-color: var(--ivory); }
 
     /* ── Horizontal Rule ─────────────────────────────────── */
     .msg-content hr {
@@ -793,7 +798,7 @@
     .llm-modal input, .llm-modal select { background: var(--gray-900); border: 1px solid var(--gray-700); color: var(--ivory); border-radius: var(--radius); padding: 8px 10px; font-size: 13px; font-family: var(--font-sans); width: 100%; }
     .llm-modal input:focus, .llm-modal select:focus { outline: none; border-color: var(--accent); }
     .llm-btn { background: var(--accent); color: var(--ink); border: none; border-radius: var(--radius); padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .llm-btn:hover { background: #d8bc85; }
+    .llm-btn:hover { background: #ffffff; }
     .llm-btn.ghost { background: none; color: var(--gray-300); border: 1px solid var(--gray-700); }
     .llm-btn.ghost:hover { color: var(--ivory); border-color: var(--gray-500); }
     .llm-msg { font-size: 12px; min-height: 16px; }
@@ -819,13 +824,16 @@
     .auth-input::placeholder { color: var(--gray-600); }
     .auth-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
     .auth-btn { width: 100%; margin-top: 10px; background: var(--accent); color: var(--ink); border: none; border-radius: var(--radius); padding: 12px; font-size: 14px; font-weight: 600; font-family: var(--font-sans); cursor: pointer; transition: var(--transition); }
-    .auth-btn:hover { background: #d8bc85; }
+    .auth-btn:hover { background: #ffffff; }
     .auth-btn:disabled { opacity: 0.55; cursor: default; }
     .auth-error { font-size: 12.5px; color: var(--red); margin-top: 12px; min-height: 16px; text-align: center; }
     .auth-toggle { margin-top: 22px; text-align: center; font-size: 13px; color: var(--gray-500); }
     .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
     .auth-toggle a:hover { text-decoration: underline; }
     .logout-link { cursor: pointer; }
+    .auth-or { display: flex; align-items: center; gap: 12px; margin: 20px 0 16px; color: var(--gray-600); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .auth-or::before, .auth-or::after { content: ''; flex: 1; height: 1px; background: var(--gray-850); }
+    #googleBtn { display: flex; justify-content: center; color-scheme: light; }
   </style>
 </head>
 <body>
@@ -856,6 +864,10 @@
         <button class="auth-btn" type="submit" id="authSubmit">Entrar</button>
         <div class="auth-error" id="authError"></div>
       </form>
+      <div id="googleWrap" style="display:none">
+        <div class="auth-or">ou</div>
+        <div id="googleBtn"></div>
+      </div>
       <div class="auth-toggle" id="authToggle">
         Não tem conta? <a onclick="toggleAuthMode()">Criar conta</a>
       </div>
@@ -1582,6 +1594,41 @@
       if (e.target.id === 'llmOverlay') closeLlmModal();
     });
 
+    // ── Google Sign-In ─────────────────────────────────────
+    let _googleTries = 0;
+    async function initGoogle() {
+      let clientId = null;
+      try {
+        const r = await fetch('/api/auth/config');
+        clientId = (await r.json()).google_client_id;
+      } catch (e) { return; }
+      if (!clientId) return;  // não configurado → botão não aparece
+      if (!(window.google && google.accounts && google.accounts.id)) {
+        if (_googleTries++ > 20) return;
+        setTimeout(initGoogle, 300);
+        return;
+      }
+      google.accounts.id.initialize({ client_id: clientId, callback: onGoogleCredential });
+      const el = document.getElementById('googleBtn');
+      el.innerHTML = '';
+      google.accounts.id.renderButton(el, { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'rectangular', width: 336 });
+      document.getElementById('googleWrap').style.display = 'block';
+    }
+    async function onGoogleCredential(resp) {
+      setAuthError('');
+      try {
+        const r = await fetch('/api/auth/google', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: resp.credential }),
+        });
+        const d = await r.json();
+        if (!r.ok) { setAuthError(d.detail || 'Falha no login com Google'); return; }
+        authToken = d.token; localStorage.setItem('specter_token', authToken);
+        currentUser = d.user; CLIENT_ID = d.user.id;
+        hideAuth(); initApp();
+      } catch (e) { setAuthError('Erro de conexão com Google.'); }
+    }
+
     // ── Init ──────────────────────────────────────────────
     function initApp() {
       const ue = document.getElementById('userEmail');
@@ -1593,6 +1640,7 @@
     }
     setInterval(checkHealth, 30000);
     bootAuth();
+    initGoogle();
   </script>
 </body>
 </html>

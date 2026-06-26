@@ -1,13 +1,16 @@
 """Rotas de autenticação — cadastro, login e usuário atual."""
 import logging
 import re
+import secrets
 from datetime import datetime, timezone
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.config import settings
 from src.core.database import get_db
 from src.core.security import create_token, get_current_user, hash_password, verify_password
 from src.models.tables import User
@@ -28,6 +31,10 @@ class RegisterIn(BaseModel):
 class LoginIn(BaseModel):
     email: str
     password: str
+
+
+class GoogleIn(BaseModel):
+    credential: str   # ID token (JWT) do Google Identity Services
 
 
 def _user_out(u: User) -> dict:
@@ -68,6 +75,52 @@ async def login(payload: LoginIn, db: AsyncSession = Depends(get_db)):
         raise HTTPException(403, "Conta desativada")
     user.last_login_at = datetime.now(timezone.utc)
     await db.commit()
+    return {"token": create_token(user.id), "user": _user_out(user)}
+
+
+@router.get("/config")
+async def auth_config():
+    """Config pública pro frontend (ex: client_id do Google p/ renderizar o botão)."""
+    return {"google_client_id": settings.GOOGLE_CLIENT_ID or None}
+
+
+@router.post("/google")
+async def google_login(payload: GoogleIn, db: AsyncSession = Depends(get_db)):
+    """Login/cadastro via Google. Verifica o ID token no endpoint oficial do Google."""
+    if not settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(400, "Login com Google não está configurado")
+    try:
+        async with httpx.AsyncClient(timeout=15) as cli:
+            r = await cli.get("https://oauth2.googleapis.com/tokeninfo",
+                              params={"id_token": payload.credential})
+        info = r.json() if r.status_code == 200 else {}
+    except Exception:
+        raise HTTPException(503, "Não foi possível validar com o Google")
+
+    if r.status_code != 200:
+        raise HTTPException(401, "Token do Google inválido")
+    if info.get("aud") != settings.GOOGLE_CLIENT_ID:
+        raise HTTPException(401, "Token do Google não é deste aplicativo")
+    if info.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
+        raise HTTPException(401, "Emissor do token inválido")
+    if str(info.get("email_verified")).lower() != "true":
+        raise HTTPException(401, "Email do Google não verificado")
+    email = (info.get("email") or "").strip().lower()
+    if not email:
+        raise HTTPException(401, "Google não retornou um email")
+
+    user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if not user:
+        user = User(
+            email=email,
+            name=(info.get("name") or email.split("@")[0])[:200],
+            password_hash=hash_password(secrets.token_urlsafe(24)),  # sem senha utilizável
+        )
+        db.add(user)
+        logger.info("[AUTH] novo usuário via Google: %s", email)
+    user.last_login_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(user)
     return {"token": create_token(user.id), "user": _user_out(user)}
 
 
