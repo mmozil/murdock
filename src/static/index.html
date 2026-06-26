@@ -833,6 +833,99 @@
     .auth-or { display: flex; align-items: center; gap: 12px; margin: 20px 0 16px; color: var(--gray-600); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
     .auth-or::before, .auth-or::after { content: ''; flex: 1; height: 1px; background: var(--gray-850); }
     #googleBtn { display: flex; justify-content: center; color-scheme: light; }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       SPECTER IN-APP — tema CLARO estilo in-app Harvey (app.harvey.ai).
+       O login (.auth-overlay) e os modais admin (.llm-*) seguem DARK.
+       ═══════════════════════════════════════════════════════════════════ */
+    body { background: #ffffff; color: #1f1e1c; }
+
+    /* Sidebar (clara, estilo Harvey) */
+    .sidebar { background: #fafaf9; border-right-color: #ecebe8; }
+    .sidebar-header { border-bottom-color: #ecebe8; }
+    .logo { color: #0f0e0d; }
+    .logo-sub { color: #9b9690; }
+    .new-chat-btn { background: #ffffff; color: #1f1e1c; border: 1px solid #dcd9d4; }
+    .new-chat-btn:hover { background: #f2f1ef; }
+    .conversations::-webkit-scrollbar-thumb { background: #dcd9d4; }
+    .conv-date { color: #adaba5; }
+    .conv-item { color: #6b6862; }
+    .conv-item:hover { background: #f0efec; color: #1f1e1c; }
+    .conv-item.active { background: #eceae6; color: #0f0e0d; }
+    .conv-item .conv-delete { color: #adaba5; }
+    .conv-item .conv-delete:hover { color: #6b6862; }
+    .profile-card { background: #f4f3f1; border-color: #ecebe8; color: #6b6862; }
+    .profile-card .profile-label { color: #adaba5; }
+    .profile-card .profile-item span:last-child { color: #1f1e1c; }
+    .sidebar-footer { border-top-color: #ecebe8; color: #adaba5; }
+    .sidebar-footer a { color: #6b6862; }
+    .sidebar-footer a:hover { color: #0f0e0d; }
+
+    /* Main + header */
+    .main { background: #ffffff; }
+    .main-header { background: #ffffff; border-bottom-color: #ecebe8; }
+    .main-header h2 { color: #6b6862; }
+    .status-badge { background: #f7f6f4; border-color: #ecebe8; color: #8f8b85; }
+    .messages::-webkit-scrollbar-thumb { background: #dcd9d4; }
+
+    /* Welcome */
+    .welcome-brand h1 { color: #0f0e0d; }
+    .welcome-brand .tagline { color: #9b9690; }
+    .welcome p { color: #6b6862; }
+    .example-btn { border-color: #e2e0db; color: #4a4843; background: #ffffff; }
+    .example-btn:hover { border-color: #c9c6c0; color: #0f0e0d; background: #f7f6f4; }
+
+    /* Avatares + nome */
+    .msg.user .msg-avatar { background: #eceae6; color: #6b6862; }
+    .msg.assistant .msg-avatar { background: #0f0e0d; color: #fafaf9; }
+    .msg-name { color: #8f8b85; }
+
+    /* Conteúdo das mensagens (markdown) */
+    .msg-content { color: #2c2b29; }
+    .msg-content h1, .msg-content h2, .msg-content h3, .msg-content h4 { color: #0f0e0d; }
+    .msg-content h1 { border-bottom-color: #ecebe8; }
+    .msg-content h2 { border-bottom-color: #f0efec; }
+    .msg-content h3 { color: #2c2b29; }
+    .msg-content h4 { color: #4a4843; }
+    .msg-content h2:last-of-type { color: #8f8b85; }
+    .msg-content code { background: #f2f1ef; color: #1f1e1c; border-color: #e2e0db; }
+    .msg-content pre { background: #f7f6f4; border-color: #ecebe8; }
+    .msg-content pre code { color: #2c2b29; }
+    .msg-content table { border-color: #e2e0db; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .msg-content thead { background: #f7f6f4; }
+    .msg-content th { color: #0f0e0d; border-bottom-color: #0f0e0d; }
+    .msg-content th:not(:last-child) { border-right-color: #ecebe8; }
+    .msg-content td { color: #2c2b29; background: #ffffff; border-bottom-color: #ecebe8; }
+    .msg-content td:not(:last-child) { border-right-color: #f0efec; }
+    .msg-content tbody tr:hover td { background: #f7f6f4; }
+    .msg-content td strong, .msg-content th strong { color: #0f0e0d; }
+    .msg-content li { color: #2c2b29; }
+    .msg-content li::marker { color: #adaba5; }
+    .msg-content li strong, .msg-content li > strong:first-child { color: #0f0e0d; }
+    .msg-content blockquote { border-left-color: #dcd9d4; background: rgba(15,14,13,0.03); color: #4a4843; }
+    .msg-content blockquote strong { color: #1f1e1c; }
+    .msg-content strong { color: #0f0e0d; }
+    .msg-content em { color: #4a4843; }
+    .msg-content a { color: #0f0e0d; border-bottom-color: rgba(15,14,13,0.3); }
+    .msg-content a:hover { border-color: #0f0e0d; }
+    .msg-content hr { border-top-color: #ecebe8; }
+    .msg.user .msg-content { color: #4a4843; }
+
+    /* Footer + feedback */
+    .msg-meta { color: #adaba5; }
+    .feedback-btn { color: #adaba5; }
+    .feedback-btn:hover { color: #6b6862; border-color: #e2e0db; background: #f2f1ef; }
+
+    /* Input (prompt) + botão de envio escuro (estilo "Ask Harvey") */
+    .input-area { background: #ffffff; }
+    .input-box { background: #f7f6f4; border-color: #e2e0db; }
+    .input-box:focus-within { border-color: #c9c6c0; box-shadow: 0 0 0 3px rgba(15,14,13,0.04); }
+    .input-box textarea { color: #1f1e1c; }
+    .input-box textarea::placeholder { color: #9b9690; }
+    .send-btn { background: #0f0e0d; color: #fafaf9; }
+    .send-btn:hover { background: #2e2d2b; }
+    .input-hint { color: #adaba5; }
+    .typing-indicator span { background: #adaba5; }
   </style>
 </head>
 <body>
