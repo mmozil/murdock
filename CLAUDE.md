@@ -158,3 +158,16 @@ API_KEY=...                # Auth para endpoints admin
 - **Deploy trigger** (MANUAL — sem webhook GitHub, `git push` NÃO deploya): `curl -s "https://coolify.tier.finance/api/v1/deploy?uuid=xw0wks4oo0gcsossss4kowc4&force=false" -H "Authorization: Bearer 5|claude-deploy-token-2026"` · poll: `GET /api/v1/deployments/<deployment_uuid>`
 - **Docker build**: Python 3.12-slim, porta 8010
 - **DB**: PostgreSQL 16 + pgvector (docker-compose inclui)
+
+## Correções fiscais + Determinismo (jul/2026, commit `9951a3f`)
+
+Auditoria de exatidão (o dono exige **zero achismo** — análises movem milhões; toda cifra tem que ter fonte oficial). Corrigido e deployado:
+
+- **`tools.py` — nota IN 2.306/2026:** era "presunções majoradas em 20%"; correto é **acréscimo de 10% (×1,10), só sobre a parcela da receita > R$5M/ano** (limite trim. R$1,25M; IRPJ 01/01/2026, CSLL 01/04/2026 por noventena). O cálculo do LP **não** aplica a majoração — recalcular acima de R$5M.
+- **`tools.py` — `_CRONOGRAMA_REFORMA`:** redução ICMS/ISS 2029-2032 estava **errada** (10/25/50/75); correto é **10/20/30/40%** (LC 214/2025, art. 128 ADCT). IBS 2027-2028 permanece **0,1%** (0,05% estados + 0,05% municípios) — isso já estava certo.
+- **`agent.py` — system prompt "Referência 2026":** salário mínimo **R$1.621** (era R$1.518 = 2025), contrib. INSS máx **R$988,09**, DAS-MEI **R$82,05/86,05/87,05**, redutor IRPF Lei 15.270 **R$312,89 (zera em R$7.350)**. Bloco marcado como "valores 2026 — confirmar para o ano vigente".
+- **`agent.py` — novo bloco "Zero Achismo":** proíbe citar número/lei de memória; todo valor vem de `calculate_tax`, toda lei/tema de `search_law`/`jurisprudence`; sem fonte → declarar "a confirmar" e não inventar.
+
+> **Regra permanente:** valores que expiram por ano (salário mínimo, INSS, DAS-MEI, IRPF, alíquotas de transição da reforma) devem ser reverificados em janeiro de cada ano-calendário contra fonte oficial (Planalto, gov.br/INSS, gov.br/receita, DOU). Não reintroduzir números de anos anteriores.
+
+**Pendência (fix 5 — trilha de auditoria):** `save_message` já aceita `sources_used`/`tools_called`, mas `chat`/`chat_stream` não os populam → não há registro de quais fontes embasaram cada resposta. Implementar extraindo de `result.all_messages()` (checar API do `pydantic-ai==1.104.0` antes de escrever). Alto valor pra auditabilidade em análises de alto valor.
